@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { GraduationCap, Mail, Lock, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
+import mongodbService from '@/services/mongodbService';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -15,29 +15,33 @@ const Login = () => {
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Connect to MongoDB backend via our service
+      await mongodbService.login(email, password);
       
-      if (email === 'admin@example.com' && password === 'password') {
-        toast({
-          title: "Login successful",
-          description: "Welcome back to CampusCore.",
-        });
-        // Redirect would happen here
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Login failed",
-          description: "Invalid email or password. Please try again.",
-        });
-      }
-    }, 1500);
+      toast({
+        title: "Login successful",
+        description: "Welcome back to CampusCore.",
+      });
+      
+      // Redirect to dashboard after successful login
+      navigate('/');
+    } catch (error) {
+      console.error('Login error:', error);
+      toast({
+        variant: "destructive",
+        title: "Login failed",
+        description: "Invalid email or password. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

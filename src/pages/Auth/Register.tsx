@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { GraduationCap, Mail, Lock, User, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
+import mongodbService from '@/services/mongodbService';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -16,8 +16,9 @@ const Register = () => {
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!agreeTerms) {
       toast({
@@ -30,15 +31,27 @@ const Register = () => {
     
     setIsLoading(true);
     
-    // Simulate registration process
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Connect to MongoDB backend via our service
+      await mongodbService.register(name, email, password);
+      
       toast({
         title: "Registration successful",
         description: "Your account has been created. Welcome to CampusCore!",
       });
-      // Redirect would happen here
-    }, 1500);
+      
+      // Redirect to login page after successful registration
+      navigate('/auth/login');
+    } catch (error) {
+      console.error('Registration error:', error);
+      toast({
+        variant: "destructive",
+        title: "Registration failed",
+        description: "An error occurred during registration. Please try again.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
