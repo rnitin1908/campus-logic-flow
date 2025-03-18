@@ -1,7 +1,7 @@
 
 import axios from 'axios';
 
-const API_URL = 'http://localhost:5000/api'; // Update this with your actual API URL
+const API_URL = 'http://localhost:5000/api'; // Our Express API URL
 
 export const mongodbService = {
   // Auth methods
@@ -46,6 +46,58 @@ export const mongodbService = {
     }
   },
 
+  getStudentById: async (id: string) => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.get(`${API_URL}/students/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get student error:', error);
+      throw error;
+    }
+  },
+
+  createStudent: async (studentData: any) => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.post(`${API_URL}/students`, studentData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Create student error:', error);
+      throw error;
+    }
+  },
+
+  updateStudent: async (id: string, studentData: any) => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.put(`${API_URL}/students/${id}`, studentData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Update student error:', error);
+      throw error;
+    }
+  },
+
+  deleteStudent: async (id: string) => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.delete(`${API_URL}/students/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Delete student error:', error);
+      throw error;
+    }
+  },
+
   // Staff methods
   getStaff: async () => {
     try {
@@ -56,6 +108,58 @@ export const mongodbService = {
       return response.data;
     } catch (error) {
       console.error('Get staff error:', error);
+      throw error;
+    }
+  },
+
+  getStaffById: async (id: string) => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.get(`${API_URL}/staff/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Get staff error:', error);
+      throw error;
+    }
+  },
+
+  createStaff: async (staffData: any) => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.post(`${API_URL}/staff`, staffData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Create staff error:', error);
+      throw error;
+    }
+  },
+
+  updateStaff: async (id: string, staffData: any) => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.put(`${API_URL}/staff/${id}`, staffData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Update staff error:', error);
+      throw error;
+    }
+  },
+
+  deleteStaff: async (id: string) => {
+    try {
+      const token = getAuthToken();
+      const response = await axios.delete(`${API_URL}/staff/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Delete staff error:', error);
       throw error;
     }
   },

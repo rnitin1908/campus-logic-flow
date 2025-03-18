@@ -28,19 +28,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // Check if user is logged in on initial load
     const storedUser = mongodbService.getCurrentUser();
+    
     if (storedUser) {
       setUser(storedUser);
     }
+    
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
-    const userData = await mongodbService.login(email, password);
-    setUser(userData);
+    try {
+      const userData = await mongodbService.login(email, password);
+      setUser(userData);
+    } catch (error) {
+      console.error('Login error in context:', error);
+      throw error;
+    }
   };
 
   const register = async (name: string, email: string, password: string) => {
-    await mongodbService.register(name, email, password);
+    try {
+      await mongodbService.register(name, email, password);
+    } catch (error) {
+      console.error('Register error in context:', error);
+      throw error;
+    }
   };
 
   const logout = () => {
