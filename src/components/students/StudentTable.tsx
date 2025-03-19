@@ -43,9 +43,17 @@ interface StudentTableProps {
   error: string | null;
   onRefresh: () => void;
   searchValue: string;
+  departmentFilter: string;
 }
 
-const StudentTable = ({ students, isLoading, error, onRefresh, searchValue }: StudentTableProps) => {
+const StudentTable = ({ 
+  students, 
+  isLoading, 
+  error, 
+  onRefresh, 
+  searchValue,
+  departmentFilter 
+}: StudentTableProps) => {
   const { toast } = useToast();
 
   const handleDeleteStudent = async (id: string) => {
@@ -68,13 +76,19 @@ const StudentTable = ({ students, isLoading, error, onRefresh, searchValue }: St
     }
   };
 
-  // Filter students based on search value
-  const filteredStudents = students.filter(student => 
-    student.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-    student.email.toLowerCase().includes(searchValue.toLowerCase()) ||
-    student.rollNumber.toLowerCase().includes(searchValue.toLowerCase()) ||
-    student.department.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  // Filter students based on search value and department filter
+  const filteredStudents = students.filter(student => {
+    const matchesSearch = 
+      student.name.toLowerCase().includes(searchValue.toLowerCase()) ||
+      student.email.toLowerCase().includes(searchValue.toLowerCase()) ||
+      student.rollNumber.toLowerCase().includes(searchValue.toLowerCase()) ||
+      student.department.toLowerCase().includes(searchValue.toLowerCase());
+    
+    const matchesDepartment = departmentFilter ? 
+      student.department === departmentFilter : true;
+    
+    return matchesSearch && matchesDepartment;
+  });
 
   if (isLoading) {
     return (
@@ -125,7 +139,7 @@ const StudentTable = ({ students, isLoading, error, onRefresh, searchValue }: St
           {filteredStudents.length === 0 ? (
             <TableRow>
               <TableCell colSpan={5} className="text-center py-8">
-                {searchValue ? 'No students match your search' : 'No students found'}
+                {searchValue || departmentFilter ? 'No students match your search criteria' : 'No students found'}
               </TableCell>
             </TableRow>
           ) : (

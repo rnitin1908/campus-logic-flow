@@ -21,6 +21,7 @@ const Students = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
 
   const fetchStudents = async () => {
     try {
@@ -57,9 +58,14 @@ const Students = () => {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <StudentSearch 
           searchValue={searchValue} 
-          setSearchValue={setSearchValue} 
+          setSearchValue={setSearchValue}
+          departmentFilter={departmentFilter}
+          setDepartmentFilter={setDepartmentFilter}
         />
-        <StudentActions onStudentAdded={fetchStudents} />
+        <StudentActions 
+          onStudentAdded={fetchStudents}
+          students={students}
+        />
       </div>
 
       <StudentTable 
@@ -68,6 +74,7 @@ const Students = () => {
         error={error} 
         onRefresh={fetchStudents}
         searchValue={searchValue}
+        departmentFilter={departmentFilter}
       />
     </div>
   );
