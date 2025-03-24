@@ -16,15 +16,17 @@ import NotFound from "./pages/NotFound";
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
 
-// Protected route component
+// Modified ProtectedRoute component to bypass authentication
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const user = localStorage.getItem('user');
-  
-  if (!user) {
-    return <Navigate to="/auth/login" />;
-  }
-  
+  // Temporarily allow access without authentication
   return <>{children}</>;
+  
+  // Original authentication check (commented out for now)
+  // const user = localStorage.getItem('user');
+  // if (!user) {
+  //   return <Navigate to="/auth/login" />;
+  // }
+  // return <>{children}</>;
 };
 
 const App = () => (
