@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle, FileSpreadsheet, UploadCloud } from 'lucide-react';
@@ -269,7 +268,7 @@ const ImportStudentsModal = ({ isOpen, onClose, onImportSuccess }: ImportStudent
                         {previewData.map((row, i) => (
                           <tr key={i} className="border-t">
                             {Object.values(row).map((value, j) => (
-                              <td key={j} className="px-3 py-2">{value || '-'}</td>
+                              <td key={j} className="px-3 py-2">{String(value) || '-'}</td>
                             ))}
                           </tr>
                         ))}
