@@ -38,9 +38,50 @@ const studentSchema = mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    admissionDate: {
+      type: Date,
+    },
+    class: {
+      type: String,
+    },
+    section: {
+      type: String,
+    },
+    academicYear: {
+      type: String,
+    },
+    previousSchool: {
+      type: String,
+    },
+    parentInfo: {
+      name: { type: String },
+      email: { type: String },
+      phone: { type: String },
+      relation: { type: String }
+    },
+    emergencyContacts: [
+      {
+        name: { type: String },
+        phone: { type: String },
+        relation: { type: String }
+      }
+    ],
+    healthInfo: {
+      bloodGroup: { type: String },
+      allergies: [{ type: String }],
+      medicalConditions: [{ type: String }]
+    },
+    documents: [
+      {
+        type: { type: String },
+        name: { type: String },
+        url: { type: String },
+        uploadDate: { type: Date, default: Date.now }
+      }
+    ],
     status: {
       type: String,
-      enum: ['active', 'inactive', 'graduated', 'suspended'],
+      enum: ['active', 'inactive', 'graduated', 'suspended', 'pending'],
       default: 'active',
     }
   },

@@ -1,5 +1,5 @@
-
 import axios from 'axios';
+import { Student, StudentFormData } from '@/types/student';
 
 const API_URL = 'http://localhost:5000/api'; // Our Express API URL
 
@@ -33,7 +33,7 @@ export const mongodbService = {
   },
 
   // Student methods
-  getStudents: async () => {
+  getStudents: async (): Promise<Student[]> => {
     try {
       const token = getAuthToken();
       const response = await axios.get(`${API_URL}/students`, {
@@ -46,7 +46,7 @@ export const mongodbService = {
     }
   },
 
-  getStudentById: async (id: string) => {
+  getStudentById: async (id: string): Promise<Student> => {
     try {
       const token = getAuthToken();
       const response = await axios.get(`${API_URL}/students/${id}`, {
@@ -59,7 +59,7 @@ export const mongodbService = {
     }
   },
 
-  createStudent: async (studentData: any) => {
+  createStudent: async (studentData: StudentFormData): Promise<Student> => {
     try {
       const token = getAuthToken();
       const response = await axios.post(`${API_URL}/students`, studentData, {
@@ -72,7 +72,7 @@ export const mongodbService = {
     }
   },
 
-  updateStudent: async (id: string, studentData: any) => {
+  updateStudent: async (id: string, studentData: Partial<Student>): Promise<Student> => {
     try {
       const token = getAuthToken();
       const response = await axios.put(`${API_URL}/students/${id}`, studentData, {
@@ -98,7 +98,26 @@ export const mongodbService = {
     }
   },
 
-  // Staff methods
+  // Import multiple students at once (mock implementation)
+  importStudents: async (students: StudentFormData[]): Promise<{ success: boolean, count: number }> => {
+    try {
+      const token = getAuthToken();
+      
+      // For now, we'll import students one by one
+      for (const student of students) {
+        await axios.post(`${API_URL}/students`, student, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      }
+      
+      return { success: true, count: students.length };
+    } catch (error) {
+      console.error('Import students error:', error);
+      throw error;
+    }
+  },
+
+  // Staff methods - keeping these as they were
   getStaff: async () => {
     try {
       const token = getAuthToken();

@@ -14,7 +14,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import mongodbService from '@/services/mongodbService';
+import { StudentFormData } from '@/types/student';
 
 interface AddStudentFormProps {
   onStudentAdded: () => void;
@@ -23,11 +32,16 @@ interface AddStudentFormProps {
 const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
   const { toast } = useToast();
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
-  const [newStudent, setNewStudent] = useState({
+  const [activeTab, setActiveTab] = useState('basic');
+  const [newStudent, setNewStudent] = useState<StudentFormData>({
     name: '',
     email: '',
     rollNumber: '',
     department: '',
+    dateOfBirth: '',
+    gender: '',
+    contactNumber: '',
+    address: '',
     status: 'active'
   });
 
@@ -36,17 +50,25 @@ const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
     setNewStudent(prev => ({ ...prev, [id]: value }));
   };
 
+  const handleSelectChange = (field: string, value: string) => {
+    setNewStudent(prev => ({ ...prev, [field]: value }));
+  };
+
   const handleAddStudent = async () => {
+    // Basic validation
+    if (!newStudent.name || !newStudent.email || !newStudent.rollNumber || !newStudent.department) {
+      toast({
+        title: "Validation Error",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       await mongodbService.createStudent(newStudent);
       setIsAddStudentOpen(false);
-      setNewStudent({
-        name: '',
-        email: '',
-        rollNumber: '',
-        department: '',
-        status: 'active'
-      });
+      resetForm();
       toast({
         title: "Success",
         description: "Student added successfully",
@@ -62,72 +84,200 @@ const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
     }
   };
 
+  const resetForm = () => {
+    setNewStudent({
+      name: '',
+      email: '',
+      rollNumber: '',
+      department: '',
+      dateOfBirth: '',
+      gender: '',
+      contactNumber: '',
+      address: '',
+      status: 'active'
+    });
+    setActiveTab('basic');
+  };
+
   return (
-    <Dialog open={isAddStudentOpen} onOpenChange={setIsAddStudentOpen}>
+    <Dialog open={isAddStudentOpen} onOpenChange={(open) => {
+      setIsAddStudentOpen(open);
+      if (!open) resetForm();
+    }}>
       <DialogTrigger asChild>
         <Button size="sm">
           <UserPlus className="mr-2 h-4 w-4" />
           Add Student
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Add New Student</DialogTitle>
           <DialogDescription>
             Enter the details for the new student below.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
-            <Input 
-              id="name" 
-              className="col-span-3" 
-              value={newStudent.name}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="email" className="text-right">
-              Email
-            </Label>
-            <Input 
-              id="email" 
-              className="col-span-3" 
-              value={newStudent.email}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="rollNumber" className="text-right">
-              Roll Number
-            </Label>
-            <Input 
-              id="rollNumber" 
-              className="col-span-3" 
-              value={newStudent.rollNumber}
-              onChange={handleInputChange}
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="department" className="text-right">
-              Department
-            </Label>
-            <Input 
-              id="department" 
-              className="col-span-3" 
-              value={newStudent.department}
-              onChange={handleInputChange}
-            />
-          </div>
-        </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="basic">Basic Info</TabsTrigger>
+            <TabsTrigger value="contact">Contact Details</TabsTrigger>
+            <TabsTrigger value="academic">Academic Info</TabsTrigger>
+          </TabsList>
+          <TabsContent value="basic" className="space-y-4 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">
+                  Full Name <span className="text-destructive">*</span>
+                </Label>
+                <Input 
+                  id="name" 
+                  value={newStudent.name}
+                  onChange={handleInputChange}
+                  placeholder="John Doe"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">
+                  Email <span className="text-destructive">*</span>
+                </Label>
+                <Input 
+                  id="email" 
+                  type="email"
+                  value={newStudent.email}
+                  onChange={handleInputChange}
+                  placeholder="john@example.com"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                <Input 
+                  id="dateOfBirth" 
+                  type="date"
+                  value={newStudent.dateOfBirth}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gender">Gender</Label>
+                <Select 
+                  value={newStudent.gender} 
+                  onValueChange={(value) => handleSelectChange('gender', value)}
+                >
+                  <SelectTrigger id="gender">
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button type="button" onClick={() => setActiveTab('contact')}>
+                Next
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="contact" className="space-y-4 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="contactNumber">Contact Number</Label>
+                <Input 
+                  id="contactNumber" 
+                  value={newStudent.contactNumber}
+                  onChange={handleInputChange}
+                  placeholder="+1 234 567 890"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input 
+                  id="address" 
+                  value={newStudent.address}
+                  onChange={handleInputChange}
+                  placeholder="123 Main St, City"
+                />
+              </div>
+            </div>
+            <div className="flex justify-between">
+              <Button type="button" variant="outline" onClick={() => setActiveTab('basic')}>
+                Previous
+              </Button>
+              <Button type="button" onClick={() => setActiveTab('academic')}>
+                Next
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="academic" className="space-y-4 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="rollNumber">
+                  Roll Number <span className="text-destructive">*</span>
+                </Label>
+                <Input 
+                  id="rollNumber" 
+                  value={newStudent.rollNumber}
+                  onChange={handleInputChange}
+                  placeholder="R2023001"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="department">
+                  Department <span className="text-destructive">*</span>
+                </Label>
+                <Select 
+                  value={newStudent.department} 
+                  onValueChange={(value) => handleSelectChange('department', value)}
+                >
+                  <SelectTrigger id="department">
+                    <SelectValue placeholder="Select department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Computer Science">Computer Science</SelectItem>
+                    <SelectItem value="Electrical Engineering">Electrical Engineering</SelectItem>
+                    <SelectItem value="Mechanical Engineering">Mechanical Engineering</SelectItem>
+                    <SelectItem value="Civil Engineering">Civil Engineering</SelectItem>
+                    <SelectItem value="Business Administration">Business Administration</SelectItem>
+                    <SelectItem value="Physics">Physics</SelectItem>
+                    <SelectItem value="Mathematics">Mathematics</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={newStudent.status} 
+                  onValueChange={(value) => handleSelectChange('status', value)}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex justify-between">
+              <Button type="button" variant="outline" onClick={() => setActiveTab('contact')}>
+                Previous
+              </Button>
+              <Button type="button" onClick={handleAddStudent}>
+                Submit
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
         <DialogFooter>
           <Button variant="outline" onClick={() => setIsAddStudentOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleAddStudent}>Save</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

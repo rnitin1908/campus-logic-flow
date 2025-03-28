@@ -1,17 +1,19 @@
 
 import { useState } from 'react';
-import { Download } from 'lucide-react';
+import { Download, Upload, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from "@/components/ui/use-toast";
 import AddStudentForm from './AddStudentForm';
 import mongodbService from '@/services/mongodbService';
+import { Student } from '@/types/student';
 
 interface StudentActionsProps {
   onStudentAdded: () => void;
-  students: any[];
+  students: Student[];
+  onImportClick: () => void;
 }
 
-const StudentActions = ({ onStudentAdded, students }: StudentActionsProps) => {
+const StudentActions = ({ onStudentAdded, students, onImportClick }: StudentActionsProps) => {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
 
@@ -20,7 +22,7 @@ const StudentActions = ({ onStudentAdded, students }: StudentActionsProps) => {
       setIsExporting(true);
       
       // Convert students data to CSV format
-      const headers = ['Name', 'Email', 'Roll Number', 'Department', 'Status'];
+      const headers = ['Name', 'Email', 'Roll Number', 'Department', 'Status', 'Contact Number', 'Address'];
       const csvRows = [headers.join(',')];
       
       students.forEach(student => {
@@ -29,7 +31,9 @@ const StudentActions = ({ onStudentAdded, students }: StudentActionsProps) => {
           `"${student.email}"`,
           `"${student.rollNumber}"`,
           `"${student.department}"`,
-          `"${student.status}"`
+          `"${student.status}"`,
+          `"${student.contactNumber || ''}"`,
+          `"${student.address || ''}"`
         ];
         csvRows.push(values.join(','));
       });
@@ -72,6 +76,14 @@ const StudentActions = ({ onStudentAdded, students }: StudentActionsProps) => {
       >
         <Download className="mr-2 h-4 w-4" />
         {isExporting ? 'Exporting...' : 'Export'}
+      </Button>
+      <Button 
+        variant="outline"
+        size="sm"
+        onClick={onImportClick}
+      >
+        <Upload className="mr-2 h-4 w-4" />
+        Import
       </Button>
       <AddStudentForm onStudentAdded={onStudentAdded} />
     </div>

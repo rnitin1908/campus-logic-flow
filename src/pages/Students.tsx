@@ -5,15 +5,15 @@ import mongodbService from '@/services/mongodbService';
 import StudentSearch from '@/components/students/StudentSearch';
 import StudentActions from '@/components/students/StudentActions';
 import StudentTable from '@/components/students/StudentTable';
-
-interface Student {
-  _id: string;
-  name: string;
-  email: string;
-  rollNumber: string;
-  department: string;
-  status: string;
-}
+import { Student } from '@/types/student';
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import StudentProfile from '@/components/students/StudentProfile';
+import ImportStudentsModal from '@/components/students/ImportStudentsModal';
 
 const Students = () => {
   const { toast } = useToast();
@@ -22,6 +22,9 @@ const Students = () => {
   const [error, setError] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('');
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [activeTab, setActiveTab] = useState('list');
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const fetchStudents = async () => {
     try {
@@ -46,6 +49,16 @@ const Students = () => {
     fetchStudents();
   }, []);
 
+  const handleStudentSelect = (student: Student) => {
+    setSelectedStudent(student);
+    setActiveTab('profile');
+  };
+
+  const handleBackToList = () => {
+    setSelectedStudent(null);
+    setActiveTab('list');
+  };
+
   return (
     <div className="space-y-8">
       <div>
@@ -55,26 +68,55 @@ const Students = () => {
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <StudentSearch 
-          searchValue={searchValue} 
-          setSearchValue={setSearchValue}
-          departmentFilter={departmentFilter}
-          setDepartmentFilter={setDepartmentFilter}
-        />
-        <StudentActions 
-          onStudentAdded={fetchStudents}
-          students={students}
-        />
-      </div>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full md:w-auto grid-cols-2 md:inline-flex">
+          <TabsTrigger value="list">Student List</TabsTrigger>
+          <TabsTrigger value="profile" disabled={!selectedStudent}>
+            {selectedStudent ? `${selectedStudent.name}'s Profile` : 'Student Profile'}
+          </TabsTrigger>
+        </TabsList>
 
-      <StudentTable 
-        students={students} 
-        isLoading={isLoading} 
-        error={error} 
-        onRefresh={fetchStudents}
-        searchValue={searchValue}
-        departmentFilter={departmentFilter}
+        <TabsContent value="list" className="space-y-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <StudentSearch 
+              searchValue={searchValue} 
+              setSearchValue={setSearchValue}
+              departmentFilter={departmentFilter}
+              setDepartmentFilter={setDepartmentFilter}
+            />
+            <StudentActions 
+              onStudentAdded={fetchStudents}
+              students={students}
+              onImportClick={() => setShowImportModal(true)}
+            />
+          </div>
+
+          <StudentTable 
+            students={students} 
+            isLoading={isLoading} 
+            error={error} 
+            onRefresh={fetchStudents}
+            searchValue={searchValue}
+            departmentFilter={departmentFilter}
+            onStudentSelect={handleStudentSelect}
+          />
+        </TabsContent>
+
+        <TabsContent value="profile">
+          {selectedStudent && (
+            <StudentProfile 
+              student={selectedStudent} 
+              onBack={handleBackToList}
+              onUpdate={fetchStudents}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
+
+      <ImportStudentsModal 
+        isOpen={showImportModal} 
+        onClose={() => setShowImportModal(false)}
+        onImportSuccess={fetchStudents}
       />
     </div>
   );

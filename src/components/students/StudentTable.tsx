@@ -5,6 +5,8 @@ import {
   ArrowUpDown,
   ChevronDown,
   Trash,
+  UserCog,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,15 +29,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import mongodbService from '@/services/mongodbService';
-
-interface Student {
-  _id: string;
-  name: string;
-  email: string;
-  rollNumber: string;
-  department: string;
-  status: string;
-}
+import { Student } from '@/types/student';
 
 interface StudentTableProps {
   students: Student[];
@@ -44,6 +38,7 @@ interface StudentTableProps {
   onRefresh: () => void;
   searchValue: string;
   departmentFilter: string;
+  onStudentSelect: (student: Student) => void;
 }
 
 const StudentTable = ({ 
@@ -52,7 +47,8 @@ const StudentTable = ({
   error, 
   onRefresh, 
   searchValue,
-  departmentFilter 
+  departmentFilter,
+  onStudentSelect
 }: StudentTableProps) => {
   const { toast } = useToast();
 
@@ -144,7 +140,7 @@ const StudentTable = ({
             </TableRow>
           ) : (
             filteredStudents.map((student) => (
-              <TableRow key={student._id} className="hover:bg-muted/50">
+              <TableRow key={student._id} className="hover:bg-muted/50 cursor-pointer" onClick={() => onStudentSelect(student)}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-8 w-8">
@@ -173,17 +169,21 @@ const StudentTable = ({
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="icon">
                         <ChevronDown className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                      <DropdownMenuItem>View Profile</DropdownMenuItem>
-                      <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                      <DropdownMenuItem>View Grades</DropdownMenuItem>
-                      <DropdownMenuItem>View Attendance</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onStudentSelect(student)}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem>
+                        <UserCog className="mr-2 h-4 w-4" />
+                        Edit Details
+                      </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 
                         className="text-destructive"
