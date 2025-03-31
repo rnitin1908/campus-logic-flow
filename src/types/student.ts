@@ -78,10 +78,10 @@ export function convertToSupabaseStudent(student: StudentFormData): any {
     roll_number: student.rollNumber || student.roll_number,
     department: student.department,
     date_of_birth: student.dateOfBirth || student.date_of_birth,
-    gender: student.gender as GenderType,
+    gender: student.gender as GenderType || null,
     contact_number: student.contactNumber || student.contact_number,
     address: student.address,
-    status: student.status as StatusType
+    status: student.status as StatusType || 'active'
   };
 }
 

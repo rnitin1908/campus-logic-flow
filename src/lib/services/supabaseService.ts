@@ -1,5 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, convertToMongoDBStudent, GenderType, StatusType } from '@/types/student';
+import { Database } from '@/integrations/supabase/types';
 
 // Define allowed user roles
 export const USER_ROLES = {
@@ -13,6 +15,9 @@ export const USER_ROLES = {
   RECEPTIONIST: 'receptionist',
   TRANSPORT_MANAGER: 'transport_manager'
 };
+
+// Type for user roles that matches the Supabase enum
+export type UserRoleType = Database['public']['Enums']['user_role'];
 
 // Helper function to check if Supabase is available
 const checkSupabaseAvailability = () => {
@@ -76,6 +81,9 @@ export const supabaseService = {
       if (error) throw error;
 
       if (data.user) {
+        // Convert role string to a valid UserRoleType
+        const userRole = validateUserRole(role);
+        
         // Create a profile record in the profiles table
         const { error: profileError } = await supabase
           .from('profiles')
@@ -83,7 +91,7 @@ export const supabaseService = {
             id: data.user.id, 
             name, 
             email,
-            role, 
+            role: userRole,
             school_id: schoolId
           });
 
@@ -440,5 +448,28 @@ export const supabaseService = {
     return { success: true, message: 'Database setup initiated' };
   }
 };
+
+// Helper function to validate user role
+function validateUserRole(role: string): UserRoleType {
+  const validRoles: UserRoleType[] = [
+    'super_admin',
+    'school_admin',
+    'teacher',
+    'student',
+    'parent',
+    'accountant',
+    'librarian',
+    'receptionist',
+    'transport_manager'
+  ];
+  
+  if (validRoles.includes(role as UserRoleType)) {
+    return role as UserRoleType;
+  }
+  
+  // Default to 'student' if role is invalid
+  console.warn(`Invalid role: ${role}. Defaulting to 'student'.`);
+  return 'student';
+}
 
 export default supabaseService;
