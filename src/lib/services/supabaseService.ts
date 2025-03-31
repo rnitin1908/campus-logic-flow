@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import { Student, StudentFormData } from '@/types/student';
 
@@ -5,11 +6,17 @@ import { Student, StudentFormData } from '@/types/student';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing Supabase URL or key. Make sure to set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY');
+// Check if Supabase credentials are available
+const supabaseConfigured = supabaseUrl && supabaseKey;
+
+if (!supabaseConfigured) {
+  console.warn('Supabase credentials not found. Some features will be unavailable. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// Create a mock or actual Supabase client based on availability of credentials
+const supabase = supabaseConfigured 
+  ? createClient(supabaseUrl, supabaseKey)
+  : null;
 
 // Define allowed user roles
 export const USER_ROLES = {
@@ -24,11 +31,20 @@ export const USER_ROLES = {
   TRANSPORT_MANAGER: 'transport_manager'
 };
 
+// Helper function to check if Supabase is available
+const checkSupabaseAvailability = () => {
+  if (!supabaseConfigured) {
+    throw new Error('Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY environment variables.');
+  }
+};
+
 export const supabaseService = {
   // Auth methods
   login: async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      checkSupabaseAvailability();
+      
+      const { data, error } = await supabase!.auth.signInWithPassword({
         email,
         password,
       });
@@ -37,7 +53,7 @@ export const supabaseService = {
 
       if (data.user) {
         // Get user profile data from the profiles table
-        const { data: profileData } = await supabase
+        const { data: profileData } = await supabase!
           .from('profiles')
           .select('*, schools(name, id)')
           .eq('id', data.user.id)
@@ -67,7 +83,9 @@ export const supabaseService = {
 
   register: async (name: string, email: string, password: string, role: string = USER_ROLES.STUDENT, schoolId: string | null = null) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      checkSupabaseAvailability();
+      
+      const { data, error } = await supabase!.auth.signUp({
         email,
         password,
       });
@@ -76,7 +94,7 @@ export const supabaseService = {
 
       if (data.user) {
         // Create a profile record in the profiles table
-        const { error: profileError } = await supabase
+        const { error: profileError } = await supabase!
           .from('profiles')
           .insert([
             { 
@@ -101,7 +119,9 @@ export const supabaseService = {
   },
 
   logout: async () => {
-    await supabase.auth.signOut();
+    if (supabaseConfigured) {
+      await supabase!.auth.signOut();
+    }
     localStorage.removeItem('user');
   },
 
@@ -115,7 +135,9 @@ export const supabaseService = {
   // Student methods
   getStudents: async (schoolId?: string): Promise<Student[]> => {
     try {
-      let query = supabase.from('students').select('*');
+      checkSupabaseAvailability();
+      
+      let query = supabase!.from('students').select('*');
       
       // Filter by school if a school ID is provided
       if (schoolId) {
@@ -214,7 +236,9 @@ export const supabaseService = {
   // School methods
   getSchools: async () => {
     try {
-      const { data, error } = await supabase
+      checkSupabaseAvailability();
+      
+      const { data, error } = await supabase!
         .from('schools')
         .select('*');
 
@@ -293,7 +317,9 @@ export const supabaseService = {
   // Staff methods
   getStaff: async () => {
     try {
-      const { data, error } = await supabase
+      checkSupabaseAvailability();
+      
+      const { data, error } = await supabase!
         .from('staff')
         .select('*');
 
@@ -375,8 +401,15 @@ export const supabaseService = {
     return user ? JSON.parse(user) : null;
   },
 
+  // Check if Supabase is configured
+  isSupabaseConfigured: () => {
+    return supabaseConfigured;
+  },
+
   // Create the necessary tables and RLS policies
   setupDatabase: async () => {
+    checkSupabaseAvailability();
+    
     const user = supabaseService.getCurrentUser();
     if (!user || user.role !== USER_ROLES.SUPER_ADMIN) {
       throw new Error('Only super admins can set up the database');

@@ -1,5 +1,7 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabaseService, USER_ROLES, mongodbService } from '@/lib/services';
+import { useToast } from '@/components/ui/use-toast';
 
 interface User {
   id: string;
@@ -40,8 +42,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [isAuthenticated, setIsAuthenticated] = useState(!!user);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
+    // Check if Supabase is configured on component mount
+    if (!supabaseService.isSupabaseConfigured()) {
+      toast({
+        title: "Configuration Error",
+        description: "Supabase is not configured. Some features may be unavailable.",
+        variant: "destructive",
+      });
+    }
+
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -57,7 +69,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const userData = await supabaseService.login(email, password);
+      
+      // First try Supabase if configured
+      if (supabaseService.isSupabaseConfigured()) {
+        const userData = await supabaseService.login(email, password);
+        setUser(userData);
+        setIsAuthenticated(true);
+        localStorage.setItem('user', JSON.stringify(userData));
+        return;
+      }
+      
+      // Fall back to MongoDB service if Supabase is not available
+      const userData = await mongodbService.login(email, password);
       setUser(userData);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(userData));
@@ -74,7 +97,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (name: string, email: string, password: string, role: string = USER_ROLES.STUDENT, schoolId: string | null = null) => {
     try {
       setIsLoading(true);
-      await supabaseService.register(name, email, password, role, schoolId);
+      
+      // First try Supabase if configured
+      if (supabaseService.isSupabaseConfigured()) {
+        await supabaseService.register(name, email, password, role, schoolId);
+        // After successful registration, you might want to automatically log the user in
+        await login(email, password);
+        return;
+      }
+      
+      // Fall back to MongoDB service if Supabase is not available
+      await mongodbService.register(name, email, password);
       // After successful registration, you might want to automatically log the user in
       await login(email, password);
     } catch (error) {
@@ -86,7 +119,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    supabaseService.logout();
+    if (supabaseService.isSupabaseConfigured()) {
+      supabaseService.logout();
+    } else {
+      mongodbService.logout();
+    }
     setUser(null);
     setIsAuthenticated(false);
   };

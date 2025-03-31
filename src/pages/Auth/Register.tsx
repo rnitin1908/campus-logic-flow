@@ -1,13 +1,16 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, User, UserPlus } from 'lucide-react';
+import { GraduationCap, Mail, Lock, User, UserPlus, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
-import mongodbService from '@/services/mongodbService';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabaseService } from '@/lib/services';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -17,6 +20,8 @@ const Register = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { register } = useAuth();
+  const isSupabaseConfigured = supabaseService.isSupabaseConfigured();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,8 +37,7 @@ const Register = () => {
     setIsLoading(true);
     
     try {
-      // Connect to MongoDB backend via our service
-      await mongodbService.register(name, email, password);
+      await register(name, email, password);
       
       toast({
         title: "Registration successful",
@@ -68,6 +72,15 @@ const Register = () => {
             </p>
           </div>
         </div>
+        
+        {!isSupabaseConfigured && (
+          <Alert variant="warning" className="border-amber-500 bg-amber-50 text-amber-800">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              Supabase is not configured. Please set the environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
+            </AlertDescription>
+          </Alert>
+        )}
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
