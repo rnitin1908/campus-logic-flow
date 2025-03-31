@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Student, StudentFormData } from '@/types/student';
 
@@ -11,6 +10,19 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseKey);
+
+// Define allowed user roles
+export const USER_ROLES = {
+  SUPER_ADMIN: 'super_admin',
+  SCHOOL_ADMIN: 'school_admin',
+  TEACHER: 'teacher',
+  STUDENT: 'student',
+  PARENT: 'parent',
+  ACCOUNTANT: 'accountant',
+  LIBRARIAN: 'librarian',
+  RECEPTIONIST: 'receptionist',
+  TRANSPORT_MANAGER: 'transport_manager'
+};
 
 export const supabaseService = {
   // Auth methods
@@ -27,7 +39,7 @@ export const supabaseService = {
         // Get user profile data from the profiles table
         const { data: profileData } = await supabase
           .from('profiles')
-          .select('*')
+          .select('*, schools(name, id)')
           .eq('id', data.user.id)
           .single();
 
@@ -36,7 +48,9 @@ export const supabaseService = {
           id: data.user.id,
           name: profileData?.name || data.user.email?.split('@')[0] || 'User',
           email: data.user.email,
-          role: profileData?.role || 'student',
+          role: profileData?.role || USER_ROLES.STUDENT,
+          schoolId: profileData?.school_id || null,
+          schoolName: profileData?.schools?.name || null,
           token: data.session?.access_token || '',
         };
 
@@ -51,7 +65,7 @@ export const supabaseService = {
     }
   },
 
-  register: async (name: string, email: string, password: string) => {
+  register: async (name: string, email: string, password: string, role: string = USER_ROLES.STUDENT, schoolId: string | null = null) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -69,7 +83,8 @@ export const supabaseService = {
               id: data.user.id, 
               name, 
               email,
-              role: 'student' // Default role
+              role,
+              school_id: schoolId
             }
           ]);
 
@@ -90,12 +105,24 @@ export const supabaseService = {
     localStorage.removeItem('user');
   },
 
+  // Role-based access control helpers
+  hasPermission: (requiredRoles: string[]) => {
+    const user = supabaseService.getCurrentUser();
+    if (!user) return false;
+    return requiredRoles.includes(user.role);
+  },
+
   // Student methods
-  getStudents: async (): Promise<Student[]> => {
+  getStudents: async (schoolId?: string): Promise<Student[]> => {
     try {
-      const { data, error } = await supabase
-        .from('students')
-        .select('*');
+      let query = supabase.from('students').select('*');
+      
+      // Filter by school if a school ID is provided
+      if (schoolId) {
+        query = query.eq('school_id', schoolId);
+      }
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
@@ -184,6 +211,85 @@ export const supabaseService = {
     }
   },
 
+  // School methods
+  getSchools: async () => {
+    try {
+      const { data, error } = await supabase
+        .from('schools')
+        .select('*');
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Get schools error:', error);
+      throw error;
+    }
+  },
+
+  getSchoolById: async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('schools')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Get school error:', error);
+      throw error;
+    }
+  },
+
+  createSchool: async (schoolData: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('schools')
+        .insert([schoolData])
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Create school error:', error);
+      throw error;
+    }
+  },
+
+  updateSchool: async (id: string, schoolData: any) => {
+    try {
+      const { data, error } = await supabase
+        .from('schools')
+        .update(schoolData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Update school error:', error);
+      throw error;
+    }
+  },
+
+  deleteSchool: async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('schools')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      return { success: true, message: 'School deleted successfully' };
+    } catch (error) {
+      console.error('Delete school error:', error);
+      throw error;
+    }
+  },
+
   // Staff methods
   getStaff: async () => {
     try {
@@ -268,6 +374,19 @@ export const supabaseService = {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
   },
+
+  // Create the necessary tables and RLS policies
+  setupDatabase: async () => {
+    const user = supabaseService.getCurrentUser();
+    if (!user || user.role !== USER_ROLES.SUPER_ADMIN) {
+      throw new Error('Only super admins can set up the database');
+    }
+
+    // This is a placeholder function - in reality, you would write SQL migrations
+    // or use Supabase's dashboard to set up tables and policies
+    console.log('Setting up database...');
+    return { success: true, message: 'Database setup initiated' };
+  }
 };
 
 export default supabaseService;

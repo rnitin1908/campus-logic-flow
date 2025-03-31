@@ -1,12 +1,14 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import mongodbService from '@/services/mongodbService';
+import supabaseService, { USER_ROLES } from '@/services/supabaseService';
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
+  schoolId?: string | null;
+  schoolName?: string | null;
   token: string;
 }
 
@@ -15,8 +17,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, role?: string, schoolId?: string | null) => Promise<void>;
   logout: () => void;
+  hasRole: (roles: string[]) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,7 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Check if user is logged in on initial load
-    const storedUser = mongodbService.getCurrentUser();
+    const storedUser = supabaseService.getCurrentUser();
     
     if (storedUser) {
       setUser(storedUser);
@@ -38,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const userData = await mongodbService.login(email, password);
+      const userData = await supabaseService.login(email, password);
       setUser(userData);
     } catch (error) {
       console.error('Login error in context:', error);
@@ -46,9 +49,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (name: string, email: string, password: string, role: string = USER_ROLES.STUDENT, schoolId: string | null = null) => {
     try {
-      await mongodbService.register(name, email, password);
+      await supabaseService.register(name, email, password, role, schoolId);
     } catch (error) {
       console.error('Register error in context:', error);
       throw error;
@@ -56,8 +59,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    mongodbService.logout();
+    supabaseService.logout();
     setUser(null);
+  };
+
+  const hasRole = (roles: string[]): boolean => {
+    if (!user) return false;
+    return roles.includes(user.role);
   };
 
   const value = {
@@ -66,7 +74,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     isLoading,
     login,
     register,
-    logout
+    logout,
+    hasRole
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -79,3 +88,17 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// Helper hook for role-based access control
+export const useAuthorization = () => {
+  const { hasRole } = useAuth();
+  
+  const checkAccess = (allowedRoles: string[]) => {
+    return hasRole(allowedRoles);
+  };
+
+  return { checkAccess };
+};
+
+// Exported role constants for easier access
+export const ROLES = USER_ROLES;

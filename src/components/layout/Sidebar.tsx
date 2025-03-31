@@ -1,13 +1,15 @@
 
 import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { useAuth, ROLES } from '@/contexts/AuthContext';
 import { 
   ChevronLeft, ChevronRight, Users, BookOpen, 
-  Calendar, ClipboardCheck, GraduationCap, 
-  Clock, LayoutDashboard, Settings, LogOut 
+  Calendar, ClipboardCheck, GraduationCap, Building,
+  Clock, LayoutDashboard, Settings, LogOut, 
+  BookOpenCheck, DollarSign, Bus, UserPlus, Library
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -39,20 +41,79 @@ const NavItem = ({ icon: Icon, label, href, isCollapsed, isActive }: NavItemProp
 export function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, logout, hasRole } = useAuth();
   
-  const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-    { icon: Users, label: 'Students', href: '/students' },
-    { icon: Users, label: 'Staff', href: '/staff' },
-    { icon: ClipboardCheck, label: 'Attendance', href: '/attendance' },
-    { icon: GraduationCap, label: 'Grades', href: '/grades' },
-    { icon: BookOpen, label: 'Courses', href: '/courses' },
-    { icon: Clock, label: 'Timetable', href: '/timetable' },
-  ];
+  const handleLogout = () => {
+    logout();
+    navigate('/auth/login');
+  };
+
+  // Define navigation items with role permissions
+  const getNavItems = () => {
+    // Dashboard is visible to everyone
+    const items = [
+      { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
+    ];
+
+    // Admin and teacher access
+    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER])) {
+      items.push({ icon: Users, label: 'Students', href: '/students' });
+    }
+
+    // Admin only access
+    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN])) {
+      items.push({ icon: Users, label: 'Staff', href: '/staff' });
+    }
+
+    // Super admin only
+    if (hasRole([ROLES.SUPER_ADMIN])) {
+      items.push({ icon: Building, label: 'Schools', href: '/schools' });
+    }
+
+    // Admin and teacher access
+    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER])) {
+      items.push({ icon: ClipboardCheck, label: 'Attendance', href: '/attendance' });
+      items.push({ icon: GraduationCap, label: 'Grades', href: '/grades' });
+      items.push({ icon: BookOpen, label: 'Courses', href: '/courses' });
+    }
+
+    // Admin, teacher, student and parent access
+    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT])) {
+      items.push({ icon: Clock, label: 'Timetable', href: '/timetable' });
+    }
+    
+    // Library access
+    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.LIBRARIAN, ROLES.TEACHER, ROLES.STUDENT])) {
+      items.push({ icon: Library, label: 'Library', href: '/library' });
+    }
+
+    // Finance access
+    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.ACCOUNTANT])) {
+      items.push({ icon: DollarSign, label: 'Finance', href: '/finance' });
+    }
+
+    // Transport access
+    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TRANSPORT_MANAGER])) {
+      items.push({ icon: Bus, label: 'Transport', href: '/transport' });
+    }
+
+    // Admissions access
+    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.RECEPTIONIST])) {
+      items.push({ icon: UserPlus, label: 'Admissions', href: '/admissions' });
+    }
+
+    return items;
+  };
+  
+  const navItems = getNavItems();
   
   const bottomNavItems = [
-    { icon: Settings, label: 'Settings', href: '/settings' },
-    { icon: LogOut, label: 'Logout', href: '/auth/logout' },
+    // Settings only for admins
+    ...(hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN]) 
+      ? [{ icon: Settings, label: 'Settings', href: '/settings' }] 
+      : []),
+    { icon: LogOut, label: 'Logout', href: '#', onClick: handleLogout },
   ];
 
   return (
@@ -79,6 +140,18 @@ export function Sidebar() {
         </Button>
       </div>
       
+      {!isCollapsed && user && (
+        <div className="px-4 py-2">
+          <p className="text-sm font-medium">{user.name}</p>
+          <p className="text-xs text-muted-foreground capitalize">{user.role.replace('_', ' ')}</p>
+          {user.schoolName && (
+            <p className="text-xs text-muted-foreground">{user.schoolName}</p>
+          )}
+        </div>
+      )}
+      
+      <Separator />
+      
       <div className="flex flex-1 flex-col gap-2 px-2 py-4">
         {navItems.map((item) => (
           <NavItem
@@ -96,14 +169,29 @@ export function Sidebar() {
       
       <div className="flex flex-col gap-2 px-2 py-4">
         {bottomNavItems.map((item) => (
-          <NavItem
-            key={item.href}
-            icon={item.icon}
-            label={item.label}
-            href={item.href}
-            isCollapsed={isCollapsed}
-            isActive={location.pathname === item.href}
-          />
+          <div key={item.label} className="w-full">
+            {item.onClick ? (
+              <Button
+                variant="ghost"
+                className={cn(
+                  "w-full justify-start gap-3 px-3 py-6",
+                  isCollapsed && "justify-center px-0"
+                )}
+                onClick={item.onClick}
+              >
+                <item.icon className="h-5 w-5" />
+                {!isCollapsed && <span>{item.label}</span>}
+              </Button>
+            ) : (
+              <NavItem
+                icon={item.icon}
+                label={item.label}
+                href={item.href}
+                isCollapsed={isCollapsed}
+                isActive={location.pathname === item.href}
+              />
+            )}
+          </div>
         ))}
       </div>
     </div>
