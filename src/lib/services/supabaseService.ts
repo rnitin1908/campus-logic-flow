@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, convertToMongoDBStudent, GenderType, StatusType } from '@/types/student';
 
@@ -84,7 +83,7 @@ export const supabaseService = {
             id: data.user.id, 
             name, 
             email,
-            role: role as any, // Cast to any to handle the type validation
+            role, 
             school_id: schoolId
           });
 
@@ -129,14 +128,25 @@ export const supabaseService = {
       if (error) throw error;
       
       // Convert Supabase students to MongoDB format
-      return data?.map(student => convertToMongoDBStudent(student)) || [];
+      const students: Student[] = [];
+      
+      if (data) {
+        for (const student of data) {
+          const convertedStudent = convertToMongoDBStudent(student);
+          if (convertedStudent) {
+            students.push(convertedStudent);
+          }
+        }
+      }
+      
+      return students;
     } catch (error) {
       console.error('Get students error:', error);
       throw error;
     }
   },
 
-  getStudentById: async (id: string): Promise<Student> => {
+  getStudentById: async (id: string): Promise<Student | null> => {
     try {
       const { data, error } = await supabase
         .from('students')
@@ -153,7 +163,7 @@ export const supabaseService = {
     }
   },
 
-  createStudent: async (studentData: StudentFormData): Promise<Student> => {
+  createStudent: async (studentData: StudentFormData): Promise<Student | null> => {
     try {
       // Convert StudentFormData to Supabase format
       const supabaseStudentData = convertToSupabaseStudent(studentData);
@@ -173,7 +183,7 @@ export const supabaseService = {
     }
   },
 
-  updateStudent: async (id: string, studentData: Partial<Student>): Promise<Student> => {
+  updateStudent: async (id: string, studentData: Partial<Student>): Promise<Student | null> => {
     try {
       // Convert partial Student to Supabase format
       const updateData: any = {};
@@ -182,9 +192,9 @@ export const supabaseService = {
       if (studentData.email) updateData.email = studentData.email;
       if (studentData.rollNumber) updateData.roll_number = studentData.rollNumber;
       if (studentData.department) updateData.department = studentData.department;
-      if (studentData.status) updateData.status = studentData.status as StatusType;
+      if (studentData.status) updateData.status = studentData.status;
       if (studentData.dateOfBirth) updateData.date_of_birth = studentData.dateOfBirth;
-      if (studentData.gender) updateData.gender = studentData.gender as GenderType;
+      if (studentData.gender) updateData.gender = studentData.gender;
       if (studentData.contactNumber) updateData.contact_number = studentData.contactNumber;
       if (studentData.address) updateData.address = studentData.address;
       if (studentData.class) updateData.class = studentData.class;

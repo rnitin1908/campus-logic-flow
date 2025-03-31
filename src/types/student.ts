@@ -86,7 +86,7 @@ export function convertToSupabaseStudent(student: StudentFormData): any {
 }
 
 // Helper function to convert Supabase student to MongoDB style
-export function convertToMongoDBStudent(dbStudent: any): Student {
+export function convertToMongoDBStudent(dbStudent: any): Student | null {
   if (!dbStudent) return null;
   
   return {
