@@ -2,18 +2,9 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const connectDB = require('./config/db');
 
 // Load env vars
 dotenv.config();
-
-// Connect to database
-connectDB();
-
-// Route files
-const authRoutes = require('./routes/authRoutes');
-const studentRoutes = require('./routes/studentRoutes');
-const staffRoutes = require('./routes/staffRoutes');
 
 const app = express();
 
@@ -22,11 +13,6 @@ app.use(express.json());
 
 // Enable CORS
 app.use(cors());
-
-// Mount routers
-app.use('/api/auth', authRoutes);
-app.use('/api/students', studentRoutes);
-app.use('/api/staff', staffRoutes);
 
 // Basic route
 app.get('/', (req, res) => {
