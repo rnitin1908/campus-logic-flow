@@ -1,18 +1,17 @@
-
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import supabaseService, { USER_ROLES } from '@/services/supabaseService';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { supabaseService, USER_ROLES, mongodbService } from '@/lib/services';
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
-  schoolId?: string | null;
-  schoolName?: string | null;
+  schoolId: string | null;
+  schoolName: string | null;
   token: string;
 }
 
-interface AuthContextType {
+interface AuthContextProps {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
@@ -20,85 +19,101 @@ interface AuthContextType {
   register: (name: string, email: string, password: string, role?: string, schoolId?: string | null) => Promise<void>;
   logout: () => void;
   hasRole: (roles: string[]) => boolean;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextProps>({
+  user: null,
+  isAuthenticated: false,
+  isLoading: true,
+  login: async () => {},
+  register: async () => {},
+  logout: () => {},
+  hasRole: () => false,
+  setUser: () => {},
+});
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState(!!user);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in on initial load
-    const storedUser = supabaseService.getCurrentUser();
-    
+    const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(storedUser);
+      setUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
     }
-    
     setIsLoading(false);
   }, []);
 
+  useEffect(() => {
+    setIsAuthenticated(!!user);
+  }, [user]);
+
   const login = async (email: string, password: string) => {
     try {
+      setIsLoading(true);
       const userData = await supabaseService.login(email, password);
       setUser(userData);
+      setIsAuthenticated(true);
+      localStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
-      console.error('Login error in context:', error);
+      console.error('Login failed', error);
+      setIsAuthenticated(false);
+      setUser(null);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const register = async (name: string, email: string, password: string, role: string = USER_ROLES.STUDENT, schoolId: string | null = null) => {
     try {
+      setIsLoading(true);
       await supabaseService.register(name, email, password, role, schoolId);
+      // After successful registration, you might want to automatically log the user in
+      await login(email, password);
     } catch (error) {
-      console.error('Register error in context:', error);
+      console.error('Registration failed', error);
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const logout = () => {
     supabaseService.logout();
     setUser(null);
+    setIsAuthenticated(false);
   };
 
-  const hasRole = (roles: string[]): boolean => {
+  const hasRole = (allowedRoles: string[]): boolean => {
     if (!user) return false;
-    return roles.includes(user.role);
+    return allowedRoles.includes(user.role);
   };
 
-  const value = {
+  const value: AuthContextProps = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated,
     isLoading,
     login,
     register,
     logout,
-    hasRole
+    hasRole,
+    setUser,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!isLoading && children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
 
-// Helper hook for role-based access control
-export const useAuthorization = () => {
-  const { hasRole } = useAuth();
-  
-  const checkAccess = (allowedRoles: string[]) => {
-    return hasRole(allowedRoles);
-  };
-
-  return { checkAccess };
-};
-
-// Exported role constants for easier access
 export const ROLES = USER_ROLES;

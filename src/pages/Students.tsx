@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import mongodbService from '@/services/mongodbService';
+import { mongodbService } from '@/lib/services';
 import StudentSearch from '@/components/students/StudentSearch';
 import StudentActions from '@/components/students/StudentActions';
 import StudentTable from '@/components/students/StudentTable';
