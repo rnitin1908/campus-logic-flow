@@ -1,11 +1,9 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, User, UserPlus, AlertTriangle } from 'lucide-react';
+import { GraduationCap, Mail, Lock, UserPlus, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -16,7 +14,6 @@ const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -25,15 +22,6 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agreeTerms) {
-      toast({
-        variant: "destructive",
-        title: "Terms Agreement Required",
-        description: "You must agree to the terms and conditions to register.",
-      });
-      return;
-    }
-    
     setIsLoading(true);
     
     try {
@@ -41,17 +29,17 @@ const Register = () => {
       
       toast({
         title: "Registration successful",
-        description: "Your account has been created. Welcome to CampusCore!",
+        description: "Welcome to CampusCore. Please check your email to verify your account.",
       });
       
-      // Redirect to login page after successful registration
+      // Redirect to login after successful registration
       navigate('/auth/login');
     } catch (error) {
       console.error('Registration error:', error);
       toast({
         variant: "destructive",
         title: "Registration failed",
-        description: "An error occurred during registration. Please try again.",
+        description: "Failed to create an account. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -68,13 +56,13 @@ const Register = () => {
           <div>
             <h1 className="text-2xl font-bold">Create an account</h1>
             <p className="text-sm text-muted-foreground">
-              Join CampusCore to get started
+              Join CampusCore and start your journey
             </p>
           </div>
         </div>
-        
+
         {!isSupabaseConfigured && (
-          <Alert variant="warning" className="border-amber-500 bg-amber-50 text-amber-800">
+          <Alert variant="destructive" className="border-amber-500 bg-amber-50 text-amber-800">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               Supabase is not configured. Please set the environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
@@ -85,66 +73,37 @@ const Register = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="name">Full name</Label>
-            <div className="relative">
-              <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              <Input
-                id="name"
-                type="text"
-                placeholder="John Doe"
-                className="pl-10"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
+            <Input
+              id="name"
+              placeholder="Enter your full name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="email">Email address</Label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                className="pl-10"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
           </div>
           
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              <Input
-                id="password"
-                type="password"
-                className="pl-10"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Password must be at least 8 characters long
-            </p>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Checkbox 
-              id="terms" 
-              checked={agreeTerms}
-              onCheckedChange={(checked) => setAgreeTerms(checked as boolean)}
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
             />
-            <Label htmlFor="terms" className="text-sm">
-              I agree to the{" "}
-              <Link to="/terms" className="text-primary hover:underline">
-                terms and conditions
-              </Link>
-            </Label>
           </div>
           
           <Button type="submit" className="w-full" disabled={isLoading}>

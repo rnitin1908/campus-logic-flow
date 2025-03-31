@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Student, StudentFormData } from '@/types/student';
+import { Student, StudentFormData, convertToSupabaseStudent, convertToMongoDBStudent, GenderType, StatusType } from '@/types/student';
 
 // Define allowed user roles
 export const USER_ROLES = {
@@ -80,15 +80,13 @@ export const supabaseService = {
         // Create a profile record in the profiles table
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert([
-            { 
-              id: data.user.id, 
-              name, 
-              email,
-              role,
-              school_id: schoolId
-            }
-          ]);
+          .insert({
+            id: data.user.id, 
+            name, 
+            email,
+            role: role as any, // Cast to any to handle the type validation
+            school_id: schoolId
+          });
 
         if (profileError) throw profileError;
         
@@ -129,7 +127,9 @@ export const supabaseService = {
       const { data, error } = await query;
 
       if (error) throw error;
-      return data || [];
+      
+      // Convert Supabase students to MongoDB format
+      return data?.map(student => convertToMongoDBStudent(student)) || [];
     } catch (error) {
       console.error('Get students error:', error);
       throw error;
@@ -145,7 +145,8 @@ export const supabaseService = {
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return convertToMongoDBStudent(data);
     } catch (error) {
       console.error('Get student error:', error);
       throw error;
@@ -154,14 +155,18 @@ export const supabaseService = {
 
   createStudent: async (studentData: StudentFormData): Promise<Student> => {
     try {
+      // Convert StudentFormData to Supabase format
+      const supabaseStudentData = convertToSupabaseStudent(studentData);
+      
       const { data, error } = await supabase
         .from('students')
-        .insert([studentData])
+        .insert(supabaseStudentData)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return convertToMongoDBStudent(data);
     } catch (error) {
       console.error('Create student error:', error);
       throw error;
@@ -170,15 +175,34 @@ export const supabaseService = {
 
   updateStudent: async (id: string, studentData: Partial<Student>): Promise<Student> => {
     try {
+      // Convert partial Student to Supabase format
+      const updateData: any = {};
+      
+      if (studentData.name) updateData.name = studentData.name;
+      if (studentData.email) updateData.email = studentData.email;
+      if (studentData.rollNumber) updateData.roll_number = studentData.rollNumber;
+      if (studentData.department) updateData.department = studentData.department;
+      if (studentData.status) updateData.status = studentData.status as StatusType;
+      if (studentData.dateOfBirth) updateData.date_of_birth = studentData.dateOfBirth;
+      if (studentData.gender) updateData.gender = studentData.gender as GenderType;
+      if (studentData.contactNumber) updateData.contact_number = studentData.contactNumber;
+      if (studentData.address) updateData.address = studentData.address;
+      if (studentData.class) updateData.class = studentData.class;
+      if (studentData.section) updateData.section = studentData.section;
+      if (studentData.academicYear) updateData.academic_year = studentData.academicYear;
+      if (studentData.admissionDate) updateData.admission_date = studentData.admissionDate;
+      if (studentData.previousSchool) updateData.previous_school = studentData.previousSchool;
+      
       const { data, error } = await supabase
         .from('students')
-        .update(studentData)
+        .update(updateData)
         .eq('id', id)
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      
+      return convertToMongoDBStudent(data);
     } catch (error) {
       console.error('Update student error:', error);
       throw error;
@@ -203,9 +227,12 @@ export const supabaseService = {
   // Import multiple students at once
   importStudents: async (students: StudentFormData[]): Promise<{ success: boolean, count: number }> => {
     try {
-      const { data, error } = await supabase
+      // Convert each student to Supabase format
+      const supabaseStudents = students.map(student => convertToSupabaseStudent(student));
+      
+      const { error } = await supabase
         .from('students')
-        .insert(students);
+        .insert(supabaseStudents);
 
       if (error) throw error;
       return { success: true, count: students.length };

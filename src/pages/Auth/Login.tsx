@@ -64,7 +64,7 @@ const Login = () => {
         </div>
         
         {!isSupabaseConfigured && (
-          <Alert variant="warning" className="border-amber-500 bg-amber-50 text-amber-800">
+          <Alert variant="destructive" className="border-amber-500 bg-amber-50 text-amber-800">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
               Supabase is not configured. Please set the environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
