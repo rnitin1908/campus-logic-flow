@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, convertToMongoDBStudent, GenderType, StatusType } from '@/types/student';
 import { Database } from '@/integrations/supabase/types';
@@ -139,6 +138,7 @@ export const supabaseService = {
       const students: Student[] = [];
       
       if (data) {
+        // Use explicit type annotation and mapping to avoid recursive types
         for (const student of data) {
           const convertedStudent = convertToMongoDBStudent(student);
           if (convertedStudent) {

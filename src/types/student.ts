@@ -90,14 +90,14 @@ export function convertToMongoDBStudent(dbStudent: any): Student | null {
   if (!dbStudent) return null;
   
   return {
-    _id: dbStudent.id,
+    _id: dbStudent.id || '',
     id: dbStudent.id,
-    name: dbStudent.name,
-    email: dbStudent.email,
-    rollNumber: dbStudent.roll_number,
+    name: dbStudent.name || '',
+    email: dbStudent.email || '',
+    rollNumber: dbStudent.roll_number || '',
     roll_number: dbStudent.roll_number,
-    department: dbStudent.department,
-    status: dbStudent.status,
+    department: dbStudent.department || '',
+    status: dbStudent.status || 'active',
     dateOfBirth: dbStudent.date_of_birth,
     date_of_birth: dbStudent.date_of_birth,
     gender: dbStudent.gender,
