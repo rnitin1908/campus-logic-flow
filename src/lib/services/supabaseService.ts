@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, GenderType, StatusType } from '@/types/student';
 import { Database } from '@/integrations/supabase/types';
@@ -56,6 +57,63 @@ interface DatabaseStudent {
   created_at?: string;
   updated_at?: string;
   enrollment_date?: string;
+}
+
+// Helper function to safely convert student data
+function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student | null {
+  if (!dbStudent) return null;
+  
+  return {
+    _id: dbStudent.id || '',
+    id: dbStudent.id,
+    name: dbStudent.name || '',
+    email: dbStudent.email || '',
+    rollNumber: dbStudent.roll_number || '',
+    roll_number: dbStudent.roll_number,
+    department: dbStudent.department || '',
+    status: dbStudent.status || 'active',
+    dateOfBirth: dbStudent.date_of_birth,
+    date_of_birth: dbStudent.date_of_birth,
+    gender: dbStudent.gender,
+    contactNumber: dbStudent.contact_number,
+    contact_number: dbStudent.contact_number,
+    address: dbStudent.address,
+    admissionDate: dbStudent.admission_date,
+    admission_date: dbStudent.admission_date,
+    previousSchool: dbStudent.previous_school,
+    previous_school: dbStudent.previous_school,
+    class: dbStudent.class,
+    section: dbStudent.section,
+    academicYear: dbStudent.academic_year,
+    academic_year: dbStudent.academic_year,
+    profile_id: dbStudent.profile_id,
+    created_at: dbStudent.created_at,
+    updated_at: dbStudent.updated_at,
+    enrollment_date: dbStudent.enrollment_date
+  };
+}
+
+// Helper function to validate user role
+function validateUserRole(role: string): UserRoleType {
+  const validRoles: UserRoleType[] = [
+    'super_admin',
+    'school_admin',
+    'teacher',
+    'student',
+    'parent',
+    'accountant',
+    'librarian',
+    'receptionist',
+    'transport_manager'
+  ];
+  
+  if (validRoles.includes(role as UserRoleType)) {
+    return role as UserRoleType;
+  }
+  
+  // Default to 'student' if role is invalid
+  console.warn(`Invalid role: ${role}. Defaulting to 'student'.`);
+  return 'student';
 }
 
 export const supabaseService = {
@@ -314,7 +372,7 @@ export const supabaseService = {
 
       if (error) throw error;
       
-      return convertToMongoDBStudent(data);
+      return safeConvertToMongoDBStudent(data);
     } catch (error) {
       console.error('Create student error:', error);
       throw error;
@@ -350,7 +408,7 @@ export const supabaseService = {
 
       if (error) throw error;
       
-      return convertToMongoDBStudent(data);
+      return safeConvertToMongoDBStudent(data);
     } catch (error) {
       console.error('Update student error:', error);
       throw error;
@@ -578,62 +636,5 @@ export const supabaseService = {
     return { success: true, message: 'Database setup initiated' };
   }
 };
-
-// Helper function to safely convert student data
-function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student | null {
-  if (!dbStudent) return null;
-  
-  return {
-    _id: dbStudent.id || '',
-    id: dbStudent.id,
-    name: dbStudent.name || '',
-    email: dbStudent.email || '',
-    rollNumber: dbStudent.roll_number || '',
-    roll_number: dbStudent.roll_number,
-    department: dbStudent.department || '',
-    status: dbStudent.status || 'active',
-    dateOfBirth: dbStudent.date_of_birth,
-    date_of_birth: dbStudent.date_of_birth,
-    gender: dbStudent.gender,
-    contactNumber: dbStudent.contact_number,
-    contact_number: dbStudent.contact_number,
-    address: dbStudent.address,
-    admissionDate: dbStudent.admission_date,
-    admission_date: dbStudent.admission_date,
-    previousSchool: dbStudent.previous_school,
-    previous_school: dbStudent.previous_school,
-    class: dbStudent.class,
-    section: dbStudent.section,
-    academicYear: dbStudent.academic_year,
-    academic_year: dbStudent.academic_year,
-    profile_id: dbStudent.profile_id,
-    created_at: dbStudent.created_at,
-    updated_at: dbStudent.updated_at,
-    enrollment_date: dbStudent.enrollment_date
-  };
-}
-
-// Helper function to validate user role
-function validateUserRole(role: string): UserRoleType {
-  const validRoles: UserRoleType[] = [
-    'super_admin',
-    'school_admin',
-    'teacher',
-    'student',
-    'parent',
-    'accountant',
-    'librarian',
-    'receptionist',
-    'transport_manager'
-  ];
-  
-  if (validRoles.includes(role as UserRoleType)) {
-    return role as UserRoleType;
-  }
-  
-  // Default to 'student' if role is invalid
-  console.warn(`Invalid role: ${role}. Defaulting to 'student'.`);
-  return 'student';
-}
 
 export default supabaseService;
