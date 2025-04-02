@@ -12,30 +12,42 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabaseService } from '@/lib/services';
 import { supabase } from '@/integrations/supabase/client';
+import { createTestUsers } from '@/services/supabaseService';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [creatingTestUsers, setCreatingTestUsers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { login } = useAuth();
   const isSupabaseConfigured = supabaseService.isSupabaseConfigured();
 
-  // Helper function to check if user email exists
-  const checkUserExists = async (email: string): Promise<boolean> => {
+  const handleTestUserCreation = async () => {
+    setCreatingTestUsers(true);
+    setError(null);
+    
     try {
-      const { data } = await supabase.from('profiles')
-        .select('email')
-        .eq('email', email)
-        .maybeSingle();
-        
-      return !!data;
-    } catch (error) {
-      console.error("Error checking if user exists:", error);
-      return false;
+      await createTestUsers();
+      
+      toast({
+        title: "Test users created",
+        description: "Test users have been created successfully. You can now log in with superadmin@campuscore.edu and Password123!",
+      });
+    } catch (error: any) {
+      console.error('Error creating test users:', error);
+      setError(`Failed to create test users: ${error.message}`);
+      
+      toast({
+        variant: "destructive",
+        title: "Error creating test users",
+        description: error.message || "An unknown error occurred",
+      });
+    } finally {
+      setCreatingTestUsers(false);
     }
   };
 
@@ -45,17 +57,7 @@ const Login = () => {
     setError(null);
     
     try {
-      // First check if the user exists in the database
-      const userExists = await checkUserExists(email);
-      
-      if (!userExists) {
-        console.log("User not found in profiles table");
-        setError("User not found. Please check your email or register a new account.");
-        setIsLoading(false);
-        return;
-      }
-      
-      console.log("User found, attempting login");
+      console.log("Attempting login with:", email);
       await login(email, password);
       
       toast({
@@ -180,6 +182,24 @@ const Login = () => {
             )}
           </Button>
         </form>
+        
+        <Button 
+          variant="outline" 
+          onClick={handleTestUserCreation} 
+          disabled={creatingTestUsers || isLoading}
+          className="w-full"
+        >
+          {creatingTestUsers ? (
+            <span className="flex items-center gap-1">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+              Creating test users...
+            </span>
+          ) : (
+            <span className="flex items-center gap-1">
+              Create Test Users
+            </span>
+          )}
+        </Button>
         
         <div className="flex items-center gap-2">
           <Separator className="flex-1" />

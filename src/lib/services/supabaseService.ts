@@ -28,13 +28,6 @@ export interface TestUserResult {
   message?: string;
 }
 
-// Helper function to check if Supabase is available
-const checkSupabaseAvailability = () => {
-  if (!supabase) {
-    throw new Error('Supabase client is not initialized properly.');
-  }
-};
-
 // Simple type for student from database that avoids circular references
 interface DatabaseStudent {
   id: string;
@@ -57,6 +50,13 @@ interface DatabaseStudent {
   updated_at?: string;
   enrollment_date?: string;
 }
+
+// Helper function to check if Supabase is available
+const checkSupabaseAvailability = () => {
+  if (!supabase) {
+    throw new Error('Supabase client is not initialized properly.');
+  }
+};
 
 // Helper function to safely convert student data
 function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student | null {
@@ -123,6 +123,7 @@ export const supabaseService = {
       
       console.log("Attempting to login with email:", email);
       
+      // Try to sign in with password
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -141,10 +142,11 @@ export const supabaseService = {
           .from('profiles')
           .select('*, schools(name, id)')
           .eq('id', data.user.id)
-          .maybeSingle();
+          .single();
           
         if (profileError) {
           console.error("Error fetching profile:", profileError);
+          throw new Error("Error fetching user profile. Please try again.");
         }
           
         console.log("Profile data retrieved:", profileData);
@@ -179,67 +181,70 @@ export const supabaseService = {
       
       console.log("Attempting to register user:", email, "with role:", role);
       
-      // Check if the user already exists in profiles table
-      const { data: existingProfiles } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
-        
-      if (existingProfiles) {
-        console.log('User already exists in profiles:', existingProfiles);
-        return { success: true, message: 'User already exists', userId: existingProfiles.id };
-      }
-      
-      // Convert role string to a valid UserRoleType for metadata
-      const userRole = validateUserRole(role);
-      
-      // Register new user with role in metadata
-      const { data, error } = await supabase.auth.signUp({
+      // First, check if Supabase auth already has this user
+      const { data: authUser, error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
-            role: userRole,
+            role: validateUserRole(role),
           },
         },
       });
 
-      if (error) {
-        console.error("Registration error:", error);
-        throw error;
+      // If there's an error that's not "User already registered", throw it
+      if (authError && !authError.message.includes('already registered')) {
+        console.error("Registration error:", authError);
+        throw authError;
       }
 
-      if (data.user) {
-        console.log("User registered successfully, creating profile for:", data.user.id);
+      // If user was created or already exists in auth, create/update the profile
+      if (authUser.user || (authError && authError.message.includes('already registered'))) {
+        // Try to get existing user ID if not available from signup
+        let userId = authUser.user?.id;
         
-        // Create a profile record in the profiles table
+        if (!userId && authError?.message.includes('already registered')) {
+          // If user already exists, we need to get their ID from auth
+          console.log("User already exists in auth, fetching existing user");
+          
+          // Try to sign in to get the user ID
+          const { data: signInData } = await supabase.auth.signInWithPassword({
+            email,
+            password
+          });
+          
+          userId = signInData.user?.id;
+        }
+        
+        if (!userId) {
+          throw new Error("Could not determine user ID for profile creation");
+        }
+        
+        console.log("Creating/updating profile for user:", userId);
+        
+        // Upsert the profile record
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert({
-            id: data.user.id, 
+          .upsert({
+            id: userId, 
             name, 
             email,
-            role: userRole,
+            role: validateUserRole(role),
             school_id: schoolId
           });
 
         if (profileError) {
-          console.error("Error creating profile:", profileError);
+          console.error("Error creating/updating profile:", profileError);
           throw profileError;
         }
         
-        return { success: true, message: 'User registered successfully', userId: data.user.id };
+        return { success: true, message: 'User registered successfully', userId };
       }
       
       throw new Error('Registration failed');
     } catch (error: any) {
       console.error('Registration error:', error);
-      // If user already exists with this email, handle gracefully
-      if (error.message?.includes('already registered')) {
-        return { success: false, message: 'User with this email already exists', error };
-      }
       throw error;
     }
   },
@@ -278,26 +283,7 @@ export const supabaseService = {
         try {
           console.log(`Processing test user: ${user.email}`);
           
-          // Check if user exists in profiles table first
-          const { data: existingProfiles } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('email', user.email)
-            .maybeSingle();
-            
-          if (existingProfiles) {
-            console.log(`User ${user.email} already exists in profiles`);
-            results.push({ 
-              ...user, 
-              status: 'Exists', 
-              password: defaultPassword,
-              message: 'User already exists in profiles'
-            });
-            continue;
-          }
-          
-          console.log(`Registering user: ${user.email}`);
-          // Register new user with Supabase Auth + create profile
+          // Try to register/update the user
           const result = await supabaseService.register(
             user.name, 
             user.email, 
@@ -307,21 +293,12 @@ export const supabaseService = {
           
           console.log(`Registration result for ${user.email}:`, result);
           
-          if (result.success) {
-            results.push({ 
-              ...user, 
-              status: 'Created', 
-              password: defaultPassword,
-              message: result.message
-            });
-          } else {
-            results.push({ 
-              ...user, 
-              status: 'Error', 
-              password: defaultPassword,
-              message: result.message || 'Failed to create user'
-            });
-          }
+          results.push({ 
+            ...user, 
+            status: 'Created/Updated', 
+            password: defaultPassword,
+            message: result.message || 'User created/updated successfully'
+          });
         } catch (error: any) {
           console.error(`Error creating ${user.role} user:`, error);
           results.push({ 
@@ -408,6 +385,8 @@ export const supabaseService = {
         .single();
 
       if (error) throw error;
+      
+      if (!data) return null;
       
       // Create DatabaseStudent object to avoid circular references
       const dbStudent: DatabaseStudent = {
@@ -724,7 +703,7 @@ export const supabaseService = {
     return !!supabase;
   },
 
-  // Create the necessary tables and RLS policies
+  // Setup database
   setupDatabase: async () => {
     checkSupabaseAvailability();
     

@@ -14,7 +14,7 @@ const generateToken = (id) => {
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role = 'student' } = req.body;
 
     const userExists = await User.findOne({ email });
 
@@ -26,11 +26,17 @@ const registerUser = async (req, res) => {
       name,
       email,
       password,
-      role: 'student', // Default role
+      role: role || 'student', // Ensure role is set
     });
 
     if (user) {
+      // Return user data with token similar to Supabase response format
       res.status(201).json({
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        token: generateToken(user._id),
         message: 'User registered successfully',
       });
     } else {
@@ -57,6 +63,8 @@ const loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        schoolId: null, // Added for compatibility with Supabase response
+        schoolName: null, // Added for compatibility with Supabase response
         token: generateToken(user._id),
       });
     } else {
@@ -81,6 +89,8 @@ const getUserProfile = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        schoolId: null, // Added for compatibility with Supabase response
+        schoolName: null, // Added for compatibility with Supabase response
       });
     } else {
       res.status(404).json({ message: 'User not found' });
