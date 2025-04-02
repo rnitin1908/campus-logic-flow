@@ -55,43 +55,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
 
+    console.log("Setting up auth state listener");
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event, !!session);
+        
         if (event === 'SIGNED_IN' && session) {
-          // We'll use login function to properly set user data
-          // but we avoid setting loading state again
-          const userEmail = session.user?.email;
-          if (userEmail) {
-            // We just update the state directly to avoid recursive calls
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-              setUser(JSON.parse(storedUser));
-              setIsAuthenticated(true);
-            }
+          console.log("User signed in, session established");
+          // We'll use the stored user data if available
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            const userData = JSON.parse(storedUser);
+            console.log("Using stored user data:", userData);
+            setUser(userData);
+            setIsAuthenticated(true);
+          } else if (session.user?.email) {
+            // If no stored data, defer fetching profile
+            console.log("No stored user data, will fetch profile later");
+            setTimeout(() => {
+              supabaseService.login(session.user!.email!, '')
+                .catch(err => console.error("Error refreshing user data:", err));
+            }, 0);
           }
         } else if (event === 'SIGNED_OUT') {
+          console.log("User signed out, clearing session");
           setUser(null);
           setIsAuthenticated(false);
+          localStorage.removeItem('user');
         }
       }
     );
 
     // Check for existing session
+    console.log("Checking for existing session");
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Session check result:", !!session);
+      
       if (session) {
         // If we have a valid session but no user data, try to fetch profile
         const storedUser = localStorage.getItem('user');
         if (!storedUser && session.user?.email) {
+          console.log("Valid session without stored user data, will fetch profile");
           // We need to fetch and set up user data asynchronously
           setTimeout(() => {
             // We use this trick to avoid blocking the UI with synchronous calls
-            supabaseService.login(session.user.email, '').catch(() => {
+            supabaseService.login(session.user!.email!, '').catch((err) => {
+              console.error("Error refreshing user data:", err);
               // We ignore errors here as this is just an attempt to refresh local data
-              // If it fails, the user can always log in manually
             });
           }, 0);
         } else if (storedUser) {
+          console.log("Using stored user data with valid session");
           setUser(JSON.parse(storedUser));
           setIsAuthenticated(true);
         }
@@ -100,6 +116,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
+      console.log("Cleaning up auth state subscription");
       subscription.unsubscribe();
     };
   }, []);
@@ -111,10 +128,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
+      console.log("Login attempt with email:", email);
       
       // First try Supabase if configured
       if (supabaseService.isSupabaseConfigured()) {
+        console.log("Using Supabase for authentication");
         const userData = await supabaseService.login(email, password);
+        console.log("Login successful, user data:", userData);
         setUser(userData);
         setIsAuthenticated(true);
         localStorage.setItem('user', JSON.stringify(userData));
@@ -122,7 +142,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // Fall back to MongoDB service if Supabase is not available
+      console.log("Falling back to MongoDB for authentication");
       const userData = await mongodbService.login(email, password);
+      console.log("MongoDB login successful");
       setUser(userData);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(userData));

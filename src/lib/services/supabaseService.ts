@@ -121,20 +121,33 @@ export const supabaseService = {
     try {
       checkSupabaseAvailability();
       
+      console.log("Attempting to login with email:", email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase auth error:", error);
+        throw error;
+      }
 
       if (data.user) {
+        console.log("Login successful. Getting profile data for user:", data.user.id);
+        
         // Get user profile data from the profiles table
-        const { data: profileData } = await supabase
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
           .select('*, schools(name, id)')
           .eq('id', data.user.id)
           .maybeSingle();
+          
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+        }
+          
+        console.log("Profile data retrieved:", profileData);
 
         // Store user data in localStorage
         const userData = {
@@ -146,6 +159,8 @@ export const supabaseService = {
           schoolName: profileData?.schools?.name || null,
           token: data.session?.access_token || '',
         };
+        
+        console.log("User data prepared for localStorage:", userData);
 
         localStorage.setItem('user', JSON.stringify(userData));
         return userData;
@@ -162,35 +177,42 @@ export const supabaseService = {
     try {
       checkSupabaseAvailability();
       
-      // Check if the user already exists
-      const { data: existingUser } = await supabase
+      console.log("Attempting to register user:", email, "with role:", role);
+      
+      // Check if the user already exists in profiles table
+      const { data: existingProfiles } = await supabase
         .from('profiles')
         .select('*')
         .eq('email', email)
         .maybeSingle();
         
-      if (existingUser) {
-        console.log('User already exists, skipping registration');
-        return { success: true, message: 'User already exists', userId: existingUser.id };
+      if (existingProfiles) {
+        console.log('User already exists in profiles:', existingProfiles);
+        return { success: true, message: 'User already exists', userId: existingProfiles.id };
       }
       
-      // Register new user
+      // Convert role string to a valid UserRoleType for metadata
+      const userRole = validateUserRole(role);
+      
+      // Register new user with role in metadata
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
             name,
-            role,
+            role: userRole,
           },
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Registration error:", error);
+        throw error;
+      }
 
       if (data.user) {
-        // Convert role string to a valid UserRoleType
-        const userRole = validateUserRole(role);
+        console.log("User registered successfully, creating profile for:", data.user.id);
         
         // Create a profile record in the profiles table
         const { error: profileError } = await supabase
@@ -203,7 +225,10 @@ export const supabaseService = {
             school_id: schoolId
           });
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          console.error("Error creating profile:", profileError);
+          throw profileError;
+        }
         
         return { success: true, message: 'User registered successfully', userId: data.user.id };
       }
@@ -228,6 +253,7 @@ export const supabaseService = {
   createTestUsers: async (): Promise<TestUserResult[]> => {
     try {
       checkSupabaseAvailability();
+      console.log("Starting creation of test users");
       
       // Default password for all test users
       const defaultPassword = "Password123!";
@@ -250,6 +276,8 @@ export const supabaseService = {
       // Create each user
       for (const user of testUsers) {
         try {
+          console.log(`Processing test user: ${user.email}`);
+          
           // Check if user exists in profiles table first
           const { data: existingProfiles } = await supabase
             .from('profiles')
@@ -258,6 +286,7 @@ export const supabaseService = {
             .maybeSingle();
             
           if (existingProfiles) {
+            console.log(`User ${user.email} already exists in profiles`);
             results.push({ 
               ...user, 
               status: 'Exists', 
@@ -267,25 +296,7 @@ export const supabaseService = {
             continue;
           }
           
-          // Check if the user already exists in auth
-          // We can't use admin.getUserByEmail as it doesn't exist in the client library
-          // Instead, try a sign-in to see if the user exists
-          const { error: signInError } = await supabase.auth.signInWithPassword({
-            email: user.email,
-            password: defaultPassword
-          });
-          
-          // If there's no error during sign-in attempt, the user likely exists
-          if (!signInError) {
-            results.push({ 
-              ...user, 
-              status: 'Exists', 
-              password: defaultPassword,
-              message: 'User already exists in auth system'
-            });
-            continue;
-          }
-          
+          console.log(`Registering user: ${user.email}`);
           // Register new user with Supabase Auth + create profile
           const result = await supabaseService.register(
             user.name, 
@@ -293,6 +304,8 @@ export const supabaseService = {
             defaultPassword, 
             user.role
           );
+          
+          console.log(`Registration result for ${user.email}:`, result);
           
           if (result.success) {
             results.push({ 
@@ -320,6 +333,7 @@ export const supabaseService = {
         }
       }
       
+      console.log("Test users creation completed with results:", results);
       return results;
     } catch (error) {
       console.error('Error creating test users:', error);

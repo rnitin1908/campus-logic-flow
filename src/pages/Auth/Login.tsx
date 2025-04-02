@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabaseService } from '@/lib/services';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -23,12 +24,38 @@ const Login = () => {
   const { login } = useAuth();
   const isSupabaseConfigured = supabaseService.isSupabaseConfigured();
 
+  // Helper function to check if user email exists
+  const checkUserExists = async (email: string): Promise<boolean> => {
+    try {
+      const { data } = await supabase.from('profiles')
+        .select('email')
+        .eq('email', email)
+        .maybeSingle();
+        
+      return !!data;
+    } catch (error) {
+      console.error("Error checking if user exists:", error);
+      return false;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     
     try {
+      // First check if the user exists in the database
+      const userExists = await checkUserExists(email);
+      
+      if (!userExists) {
+        console.log("User not found in profiles table");
+        setError("User not found. Please check your email or register a new account.");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("User found, attempting login");
       await login(email, password);
       
       toast({
