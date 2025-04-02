@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, GenderType, StatusType } from '@/types/student';
 import { Database } from '@/integrations/supabase/types';
@@ -250,16 +251,28 @@ export const supabaseService = {
       // Create each user
       for (const user of testUsers) {
         try {
-          // Check if user exists in the auth system
-          const { data: authData } = await supabase.auth.admin.listUsers({
-            filter: {
-              email: user.email
-            }
-          });
+          // Check if user exists in profiles table first
+          const { data: existingProfiles } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', user.email)
+            .maybeSingle();
+            
+          if (existingProfiles) {
+            results.push({ 
+              ...user, 
+              status: 'Exists', 
+              password: defaultPassword,
+              message: 'User already exists in profiles'
+            });
+            continue;
+          }
           
-          const userExists = authData && authData.users && authData.users.length > 0;
+          // Get existing auth users by email - using a different approach
+          // since listUsers with filter is not available in the client library
+          const { data: authUserData, error: authUserError } = await supabase.auth.admin.getUserByEmail(user.email);
           
-          if (userExists) {
+          if (authUserData && authUserData.user) {
             results.push({ 
               ...user, 
               status: 'Exists', 
@@ -378,7 +391,30 @@ export const supabaseService = {
 
       if (error) throw error;
       
-      return safeConvertToMongoDBStudent(data);
+      // Create DatabaseStudent object to avoid circular references
+      const dbStudent: DatabaseStudent = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        roll_number: data.roll_number,
+        department: data.department,
+        status: data.status,
+        date_of_birth: data.date_of_birth,
+        gender: data.gender,
+        contact_number: data.contact_number,
+        address: data.address,
+        class: data.class,
+        section: data.section,
+        academic_year: data.academic_year,
+        admission_date: data.admission_date,
+        previous_school: data.previous_school,
+        profile_id: data.profile_id,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        enrollment_date: data.enrollment_date
+      };
+      
+      return safeConvertToMongoDBStudent(dbStudent);
     } catch (error) {
       console.error('Get student error:', error);
       throw error;
@@ -398,7 +434,30 @@ export const supabaseService = {
 
       if (error) throw error;
       
-      return safeConvertToMongoDBStudent(data);
+      // Create DatabaseStudent object to avoid circular references
+      const dbStudent: DatabaseStudent = {
+        id: data.id,
+        name: data.name,
+        email: data.email,
+        roll_number: data.roll_number,
+        department: data.department,
+        status: data.status,
+        date_of_birth: data.date_of_birth,
+        gender: data.gender,
+        contact_number: data.contact_number,
+        address: data.address,
+        class: data.class,
+        section: data.section,
+        academic_year: data.academic_year,
+        admission_date: data.admission_date,
+        previous_school: data.previous_school,
+        profile_id: data.profile_id,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        enrollment_date: data.enrollment_date
+      };
+      
+      return safeConvertToMongoDBStudent(dbStudent);
     } catch (error) {
       console.error('Create student error:', error);
       throw error;
