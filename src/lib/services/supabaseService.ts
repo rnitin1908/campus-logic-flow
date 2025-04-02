@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, GenderType, StatusType } from '@/types/student';
 import { Database } from '@/integrations/supabase/types';
@@ -268,11 +267,16 @@ export const supabaseService = {
             continue;
           }
           
-          // Get existing auth users by email - using a different approach
-          // since listUsers with filter is not available in the client library
-          const { data: authUserData, error: authUserError } = await supabase.auth.admin.getUserByEmail(user.email);
+          // Check if the user already exists in auth
+          // We can't use admin.getUserByEmail as it doesn't exist in the client library
+          // Instead, try a sign-in to see if the user exists
+          const { error: signInError } = await supabase.auth.signInWithPassword({
+            email: user.email,
+            password: defaultPassword
+          });
           
-          if (authUserData && authUserData.user) {
+          // If there's no error during sign-in attempt, the user likely exists
+          if (!signInError) {
             results.push({ 
               ...user, 
               status: 'Exists', 

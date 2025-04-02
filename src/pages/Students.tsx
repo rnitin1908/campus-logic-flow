@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { mongodbService } from '@/lib/services';
+import { supabaseService } from '@/lib/services';
 import StudentSearch from '@/components/students/StudentSearch';
 import StudentActions from '@/components/students/StudentActions';
 import StudentTable from '@/components/students/StudentTable';
@@ -29,7 +29,7 @@ const Students = () => {
   const fetchStudents = async () => {
     try {
       setIsLoading(true);
-      const data = await mongodbService.getStudents();
+      const data = await supabaseService.getStudents();
       setStudents(data);
       setError(null);
     } catch (err) {
