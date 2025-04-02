@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, GenderType, StatusType } from '@/types/student';
 import { Database } from '@/integrations/supabase/types';
@@ -135,13 +134,13 @@ export const supabaseService = {
           .from('profiles')
           .select('*, schools(name, id)')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
 
         // Store user data in localStorage
         const userData = {
           id: data.user.id,
           name: profileData?.name || data.user.email?.split('@')[0] || 'User',
-          email: data.user.email,
+          email: data.user.email || '',
           role: profileData?.role || USER_ROLES.STUDENT,
           schoolId: profileData?.school_id || null,
           schoolName: profileData?.schools?.name || null,
@@ -163,9 +162,28 @@ export const supabaseService = {
     try {
       checkSupabaseAvailability();
       
+      // Check if the user already exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+        
+      if (existingUser) {
+        console.log('User already exists, skipping registration');
+        return { success: true, message: 'User already exists', userId: existingUser.id };
+      }
+      
+      // Register new user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            name,
+            role,
+          },
+        },
       });
 
       if (error) throw error;
@@ -187,12 +205,16 @@ export const supabaseService = {
 
         if (profileError) throw profileError;
         
-        return { success: true, message: 'User registered successfully' };
+        return { success: true, message: 'User registered successfully', userId: data.user.id };
       }
       
       throw new Error('Registration failed');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
+      // If user already exists with this email, handle gracefully
+      if (error.message?.includes('already registered')) {
+        return { success: false, message: 'User with this email already exists', error };
+      }
       throw error;
     }
   },
@@ -228,38 +250,49 @@ export const supabaseService = {
       // Create each user
       for (const user of testUsers) {
         try {
-          // Check if user already exists
-          const { data } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('email', user.email)
-            .maybeSingle();
-            
-          if (data) {
+          // Check if user exists in the auth system
+          const { data: authData } = await supabase.auth.admin.listUsers({
+            filter: {
+              email: user.email
+            }
+          });
+          
+          const userExists = authData && authData.users && authData.users.length > 0;
+          
+          if (userExists) {
             results.push({ 
               ...user, 
               status: 'Exists', 
               password: defaultPassword,
-              message: 'User already exists, no changes made'
+              message: 'User already exists in auth system'
             });
             continue;
           }
           
-          // Register new user
-          await supabaseService.register(
+          // Register new user with Supabase Auth + create profile
+          const result = await supabaseService.register(
             user.name, 
             user.email, 
             defaultPassword, 
             user.role
           );
           
-          results.push({ 
-            ...user, 
-            status: 'Created', 
-            password: defaultPassword,
-            message: 'User created successfully'
-          });
-        } catch (error) {
+          if (result.success) {
+            results.push({ 
+              ...user, 
+              status: 'Created', 
+              password: defaultPassword,
+              message: result.message
+            });
+          } else {
+            results.push({ 
+              ...user, 
+              status: 'Error', 
+              password: defaultPassword,
+              message: result.message || 'Failed to create user'
+            });
+          }
+        } catch (error: any) {
           console.error(`Error creating ${user.role} user:`, error);
           results.push({ 
             ...user, 
@@ -275,13 +308,6 @@ export const supabaseService = {
       console.error('Error creating test users:', error);
       throw error;
     }
-  },
-
-  // Role-based access control helpers
-  hasPermission: (requiredRoles: string[]) => {
-    const user = supabaseService.getCurrentUser();
-    if (!user) return false;
-    return requiredRoles.includes(user.role);
   },
 
   // Student methods

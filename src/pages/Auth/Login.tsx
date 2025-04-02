@@ -17,6 +17,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -25,6 +26,7 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       await login(email, password);
@@ -36,12 +38,24 @@ const Login = () => {
       
       // Redirect to dashboard after successful login
       navigate('/');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Get a more specific error message from the error object
+      let errorMessage = "Invalid email or password. Please try again.";
+      if (error.message) {
+        errorMessage = error.message;
+      }
+      if (error.code === 'invalid_credentials') {
+        errorMessage = "The email or password you entered is incorrect. Please try again.";
+      }
+      
+      setError(errorMessage);
+      
       toast({
         variant: "destructive",
         title: "Login failed",
-        description: "Invalid email or password. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -69,6 +83,13 @@ const Login = () => {
             <AlertDescription>
               Supabase is not configured. Please set the environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
             </AlertDescription>
+          </Alert>
+        )}
+        
+        {error && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
         

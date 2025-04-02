@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabaseService, USER_ROLES, mongodbService } from '@/lib/services';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface User {
   id: string;
@@ -54,12 +55,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     }
 
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
-    }
-    setIsLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          // We'll use login function to properly set user data
+          // but we avoid setting loading state again
+          const userEmail = session.user?.email;
+          if (userEmail) {
+            // We just update the state directly to avoid recursive calls
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              setUser(JSON.parse(storedUser));
+              setIsAuthenticated(true);
+            }
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setIsAuthenticated(false);
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        // If we have a valid session but no user data, try to fetch profile
+        const storedUser = localStorage.getItem('user');
+        if (!storedUser && session.user?.email) {
+          // We need to fetch and set up user data asynchronously
+          setTimeout(() => {
+            // We use this trick to avoid blocking the UI with synchronous calls
+            supabaseService.login(session.user.email, '').catch(() => {
+              // We ignore errors here as this is just an attempt to refresh local data
+              // If it fails, the user can always log in manually
+            });
+          }, 0);
+        } else if (storedUser) {
+          setUser(JSON.parse(storedUser));
+          setIsAuthenticated(true);
+        }
+      }
+      setIsLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
