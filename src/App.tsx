@@ -14,6 +14,7 @@ import Login from "./pages/Auth/Login";
 import Register from "./pages/Auth/Register";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
+import CreateUsers from "./pages/Admin/CreateUsers";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -60,6 +61,13 @@ const App = () => (
               <Route path="/staff" element={
                 <RoleBasedRoute allowedRoles={adminRoutes}>
                   <Staff />
+                </RoleBasedRoute>
+              } />
+              
+              {/* Admin tools - super admin only */}
+              <Route path="/admin/create-users" element={
+                <RoleBasedRoute allowedRoles={superAdminRoutes}>
+                  <CreateUsers />
                 </RoleBasedRoute>
               } />
               

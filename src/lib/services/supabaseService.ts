@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, convertToMongoDBStudent, GenderType, StatusType } from '@/types/student';
 import { Database } from '@/integrations/supabase/types';
@@ -110,6 +109,81 @@ export const supabaseService = {
   logout: async () => {
     await supabase.auth.signOut();
     localStorage.removeItem('user');
+  },
+
+  // Create test users with different roles
+  createTestUsers: async () => {
+    try {
+      checkSupabaseAvailability();
+      
+      // Default password for all test users
+      const defaultPassword = "Password123!";
+      
+      // Define test users with different roles
+      const testUsers = [
+        { name: "Super Admin", email: "superadmin@campuscore.edu", role: USER_ROLES.SUPER_ADMIN },
+        { name: "School Admin", email: "schooladmin@campuscore.edu", role: USER_ROLES.SCHOOL_ADMIN },
+        { name: "Teacher", email: "teacher@campuscore.edu", role: USER_ROLES.TEACHER },
+        { name: "Student", email: "student@campuscore.edu", role: USER_ROLES.STUDENT },
+        { name: "Parent", email: "parent@campuscore.edu", role: USER_ROLES.PARENT },
+        { name: "Accountant", email: "accountant@campuscore.edu", role: USER_ROLES.ACCOUNTANT },
+        { name: "Librarian", email: "librarian@campuscore.edu", role: USER_ROLES.LIBRARIAN },
+        { name: "Receptionist", email: "receptionist@campuscore.edu", role: USER_ROLES.RECEPTIONIST },
+        { name: "Transport Manager", email: "transport@campuscore.edu", role: USER_ROLES.TRANSPORT_MANAGER }
+      ];
+      
+      const results = [];
+      
+      // Create each user
+      for (const user of testUsers) {
+        try {
+          // Check if user already exists
+          const { data } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', user.email)
+            .maybeSingle();
+            
+          if (data) {
+            results.push({ 
+              ...user, 
+              status: 'Exists', 
+              password: defaultPassword,
+              message: 'User already exists, no changes made'
+            });
+            continue;
+          }
+          
+          // Register new user
+          await supabaseService.register(
+            user.name, 
+            user.email, 
+            defaultPassword, 
+            user.role
+          );
+          
+          results.push({ 
+            ...user, 
+            status: 'Created', 
+            password: defaultPassword,
+            message: 'User created successfully'
+          });
+        } catch (error) {
+          console.error(`Error creating ${user.role} user:`, error);
+          results.push({ 
+            ...user, 
+            status: 'Error', 
+            password: defaultPassword,
+            message: error.message || 'Unknown error'
+          });
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      console.error('Error creating test users:', error);
+      throw error;
+    }
   },
 
   // Role-based access control helpers

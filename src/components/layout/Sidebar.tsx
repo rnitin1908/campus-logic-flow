@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -9,7 +8,8 @@ import {
   ChevronLeft, ChevronRight, Users, BookOpen, 
   Calendar, ClipboardCheck, GraduationCap, Building,
   Clock, LayoutDashboard, Settings, LogOut, 
-  BookOpenCheck, DollarSign, Bus, UserPlus, Library
+  BookOpenCheck, DollarSign, Bus, UserPlus, Library,
+  Shield
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -69,6 +69,7 @@ export function Sidebar() {
     // Super admin only
     if (hasRole([ROLES.SUPER_ADMIN])) {
       items.push({ icon: Building, label: 'Schools', href: '/schools' });
+      items.push({ icon: Shield, label: 'Create Users', href: '/admin/create-users' });
     }
 
     // Admin and teacher access
@@ -108,6 +109,7 @@ export function Sidebar() {
   
   const navItems = getNavItems();
   
+  // ... keep existing code for bottomNavItems and return statement
   const bottomNavItems = [
     // Settings only for admins
     ...(hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN]) 
