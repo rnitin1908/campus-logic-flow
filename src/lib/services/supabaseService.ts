@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { Student, StudentFormData, convertToSupabaseStudent, convertToMongoDBStudent, GenderType, StatusType } from '@/types/student';
+import { Student, StudentFormData, convertToSupabaseStudent, GenderType, StatusType } from '@/types/student';
 import { Database } from '@/integrations/supabase/types';
 
 // Define allowed user roles
@@ -18,12 +18,45 @@ export const USER_ROLES = {
 // Type for user roles that matches the Supabase enum
 export type UserRoleType = Database['public']['Enums']['user_role'];
 
+// Type for test user results
+export interface TestUserResult {
+  name: string;
+  email: string;
+  role: string;
+  password: string;
+  status: string;
+  message?: string;
+}
+
 // Helper function to check if Supabase is available
 const checkSupabaseAvailability = () => {
   if (!supabase) {
     throw new Error('Supabase client is not initialized properly.');
   }
 };
+
+// Simple type for student from database that avoids circular references
+interface DatabaseStudent {
+  id: string;
+  name: string;
+  email: string;
+  roll_number: string;
+  department: string;
+  status: string;
+  date_of_birth?: string;
+  gender?: string;
+  contact_number?: string;
+  address?: string;
+  class?: string;
+  section?: string;
+  academic_year?: string;
+  admission_date?: string;
+  previous_school?: string;
+  profile_id?: string;
+  created_at?: string;
+  updated_at?: string;
+  enrollment_date?: string;
+}
 
 export const supabaseService = {
   // Auth methods
@@ -112,7 +145,7 @@ export const supabaseService = {
   },
 
   // Create test users with different roles
-  createTestUsers: async () => {
+  createTestUsers: async (): Promise<TestUserResult[]> => {
     try {
       checkSupabaseAvailability();
       
@@ -132,7 +165,7 @@ export const supabaseService = {
         { name: "Transport Manager", email: "transport@campuscore.edu", role: USER_ROLES.TRANSPORT_MANAGER }
       ];
       
-      const results = [];
+      const results: TestUserResult[] = [];
       
       // Create each user
       for (const user of testUsers) {
@@ -209,13 +242,35 @@ export const supabaseService = {
 
       if (error) throw error;
       
-      // Convert Supabase students to MongoDB format
+      // Convert Supabase students to application format
       const students: Student[] = [];
       
-      // Handle data conversion with explicit typing to avoid recursive type issues
       if (data) {
         for (const student of data) {
-          const convertedStudent = convertToMongoDBStudent(student);
+          // Use the intermediate interface to avoid circular references
+          const dbStudent: DatabaseStudent = {
+            id: student.id,
+            name: student.name,
+            email: student.email,
+            roll_number: student.roll_number,
+            department: student.department,
+            status: student.status,
+            date_of_birth: student.date_of_birth,
+            gender: student.gender,
+            contact_number: student.contact_number,
+            address: student.address,
+            class: student.class,
+            section: student.section,
+            academic_year: student.academic_year,
+            admission_date: student.admission_date,
+            previous_school: student.previous_school,
+            profile_id: student.profile_id,
+            created_at: student.created_at,
+            updated_at: student.updated_at,
+            enrollment_date: student.enrollment_date
+          };
+          
+          const convertedStudent = safeConvertToMongoDBStudent(dbStudent);
           if (convertedStudent) {
             students.push(convertedStudent);
           }
@@ -239,7 +294,7 @@ export const supabaseService = {
 
       if (error) throw error;
       
-      return convertToMongoDBStudent(data);
+      return safeConvertToMongoDBStudent(data);
     } catch (error) {
       console.error('Get student error:', error);
       throw error;
@@ -523,6 +578,40 @@ export const supabaseService = {
     return { success: true, message: 'Database setup initiated' };
   }
 };
+
+// Helper function to safely convert student data
+function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student | null {
+  if (!dbStudent) return null;
+  
+  return {
+    _id: dbStudent.id || '',
+    id: dbStudent.id,
+    name: dbStudent.name || '',
+    email: dbStudent.email || '',
+    rollNumber: dbStudent.roll_number || '',
+    roll_number: dbStudent.roll_number,
+    department: dbStudent.department || '',
+    status: dbStudent.status || 'active',
+    dateOfBirth: dbStudent.date_of_birth,
+    date_of_birth: dbStudent.date_of_birth,
+    gender: dbStudent.gender,
+    contactNumber: dbStudent.contact_number,
+    contact_number: dbStudent.contact_number,
+    address: dbStudent.address,
+    admissionDate: dbStudent.admission_date,
+    admission_date: dbStudent.admission_date,
+    previousSchool: dbStudent.previous_school,
+    previous_school: dbStudent.previous_school,
+    class: dbStudent.class,
+    section: dbStudent.section,
+    academicYear: dbStudent.academic_year,
+    academic_year: dbStudent.academic_year,
+    profile_id: dbStudent.profile_id,
+    created_at: dbStudent.created_at,
+    updated_at: dbStudent.updated_at,
+    enrollment_date: dbStudent.enrollment_date
+  };
+}
 
 // Helper function to validate user role
 function validateUserRole(role: string): UserRoleType {

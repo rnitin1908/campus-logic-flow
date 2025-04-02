@@ -10,8 +10,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Shield } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
 
+// Define a type for the test user results
+interface TestUser {
+  name: string;
+  email: string;
+  role: string;
+  password: string;
+  status: string;
+  message?: string;
+}
+
 const CreateUsers = () => {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<TestUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
   
