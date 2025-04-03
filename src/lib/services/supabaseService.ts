@@ -62,6 +62,7 @@ const checkSupabaseAvailability = () => {
 function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student | null {
   if (!dbStudent) return null;
   
+  // Create a new object without using the Student type directly to avoid circular references
   return {
     _id: dbStudent.id || '',
     id: dbStudent.id,
@@ -73,7 +74,7 @@ function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student
     status: dbStudent.status || 'active',
     dateOfBirth: dbStudent.date_of_birth,
     date_of_birth: dbStudent.date_of_birth,
-    gender: dbStudent.gender,
+    gender: dbStudent.gender as GenderType,
     contactNumber: dbStudent.contact_number,
     contact_number: dbStudent.contact_number,
     address: dbStudent.address,

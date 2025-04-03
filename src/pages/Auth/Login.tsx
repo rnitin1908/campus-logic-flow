@@ -31,12 +31,18 @@ const Login = () => {
     setError(null);
     
     try {
+      console.log("Starting test user creation process...");
       await createTestUsers();
       
       toast({
         title: "Test users created",
         description: "Test users have been created successfully. You can now log in with superadmin@campuscore.edu and Password123!",
       });
+      
+      // Pre-fill form with test credentials for convenience
+      setEmail("superadmin@campuscore.edu");
+      setPassword("Password123!");
+      
     } catch (error: any) {
       console.error('Error creating test users:', error);
       setError(`Failed to create test users: ${error.message}`);
