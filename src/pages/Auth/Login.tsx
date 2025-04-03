@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GraduationCap, Mail, Lock, LogIn, AlertTriangle, Users } from 'lucide-react';
@@ -39,7 +40,14 @@ const Login = () => {
     
     try {
       console.log("Starting test user creation process...");
+      
+      // First check if Supabase is properly configured
+      if (!isSupabaseConfigured) {
+        throw new Error('Supabase is not properly configured. Please check your environment variables.');
+      }
+      
       const results = await supabaseService.createTestUsers();
+      console.log("Test user creation results:", results);
       setTestUsersResult(results);
       
       // Count successful creations and existing users
