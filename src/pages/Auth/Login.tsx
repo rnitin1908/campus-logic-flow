@@ -1,7 +1,7 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, LogIn, AlertTriangle } from 'lucide-react';
+import { GraduationCap, Mail, Lock, LogIn, AlertTriangle, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +25,14 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const isSupabaseConfigured = supabaseService.isSupabaseConfigured();
+
+  useEffect(() => {
+    // Pre-fill the email field in development mode for convenience
+    if (process.env.NODE_ENV === 'development') {
+      setEmail('superadmin@campuscore.edu');
+      setPassword('Password123!');
+    }
+  }, []);
 
   const handleTestUserCreation = async () => {
     setCreatingTestUsers(true);
@@ -99,7 +107,7 @@ const Login = () => {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-muted/40 p-4">
-      <div className="animate-fade-in grid w-full max-w-md gap-8 rounded-xl bg-card p-8 shadow-lg">
+      <div className="animate-fade-in grid w-full max-w-md gap-6 rounded-xl bg-card p-8 shadow-lg">
         <div className="flex flex-col items-center justify-center space-y-2 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <GraduationCap className="h-6 w-6 text-primary" />
@@ -127,6 +135,30 @@ const Login = () => {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
+        
+        <div className="flex flex-col gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleTestUserCreation} 
+            disabled={creatingTestUsers || isLoading}
+            className="w-full"
+          >
+            {creatingTestUsers ? (
+              <span className="flex items-center gap-1">
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Creating test users...
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <Users className="h-4 w-4 mr-2" />
+                Create Test Users
+              </span>
+            )}
+          </Button>
+          <p className="text-xs text-center text-muted-foreground">
+            First time here? Create test users before logging in.
+          </p>
+        </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -188,24 +220,6 @@ const Login = () => {
             )}
           </Button>
         </form>
-        
-        <Button 
-          variant="outline" 
-          onClick={handleTestUserCreation} 
-          disabled={creatingTestUsers || isLoading}
-          className="w-full"
-        >
-          {creatingTestUsers ? (
-            <span className="flex items-center gap-1">
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Creating test users...
-            </span>
-          ) : (
-            <span className="flex items-center gap-1">
-              Create Test Users
-            </span>
-          )}
-        </Button>
         
         <div className="flex items-center gap-2">
           <Separator className="flex-1" />

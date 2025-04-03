@@ -28,7 +28,7 @@ export interface TestUserResult {
   message?: string;
 }
 
-// Simple type for student from database that avoids circular references
+// Simple database student interface to avoid circular references
 interface DatabaseStudent {
   id: string;
   name: string;
@@ -58,12 +58,12 @@ const checkSupabaseAvailability = () => {
   }
 };
 
-// Helper function to safely convert student data
+// Helper function to safely convert student data without circular references
 function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student | null {
   if (!dbStudent) return null;
   
-  // Create a new object without using the Student type directly to avoid circular references
-  return {
+  // Create a new object with explicit casting to avoid circular references
+  const convertedStudent: Student = {
     _id: dbStudent.id || '',
     id: dbStudent.id,
     name: dbStudent.name || '',
@@ -71,13 +71,13 @@ function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student
     rollNumber: dbStudent.roll_number || '',
     roll_number: dbStudent.roll_number,
     department: dbStudent.department || '',
-    status: dbStudent.status || 'active',
+    status: (dbStudent.status || 'active') as StatusType,
     dateOfBirth: dbStudent.date_of_birth,
     date_of_birth: dbStudent.date_of_birth,
-    gender: dbStudent.gender as GenderType,
+    gender: (dbStudent.gender || 'other') as GenderType,
     contactNumber: dbStudent.contact_number,
     contact_number: dbStudent.contact_number,
-    address: dbStudent.address,
+    address: dbStudent.address || '',
     admissionDate: dbStudent.admission_date,
     admission_date: dbStudent.admission_date,
     previousSchool: dbStudent.previous_school,
@@ -91,6 +91,8 @@ function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student
     updated_at: dbStudent.updated_at,
     enrollment_date: dbStudent.enrollment_date
   };
+  
+  return convertedStudent;
 }
 
 // Helper function to validate user role
@@ -135,41 +137,77 @@ export const supabaseService = {
         throw error;
       }
 
-      if (data.user) {
-        console.log("Login successful. Getting profile data for user:", data.user.id);
-        
-        // Get user profile data from the profiles table
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('*, schools(name, id)')
-          .eq('id', data.user.id)
-          .single();
-          
-        if (profileError) {
-          console.error("Error fetching profile:", profileError);
-          throw new Error("Error fetching user profile. Please try again.");
-        }
-          
-        console.log("Profile data retrieved:", profileData);
-
-        // Store user data in localStorage
-        const userData = {
-          id: data.user.id,
-          name: profileData?.name || data.user.email?.split('@')[0] || 'User',
-          email: data.user.email || '',
-          role: profileData?.role || USER_ROLES.STUDENT,
-          schoolId: profileData?.school_id || null,
-          schoolName: profileData?.schools?.name || null,
-          token: data.session?.access_token || '',
-        };
-        
-        console.log("User data prepared for localStorage:", userData);
-
-        localStorage.setItem('user', JSON.stringify(userData));
-        return userData;
+      if (!data.user) {
+        console.error("No user returned from sign in attempt");
+        throw new Error("User not found. Please check your email or register a new account.");
       }
+
+      console.log("Login successful. Getting profile data for user:", data.user.id);
       
-      throw new Error('Login failed');
+      // Get user profile data from the profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*, schools(name, id)')
+        .eq('id', data.user.id)
+        .single();
+        
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        
+        // If no profile exists, create one
+        if (profileError.code === 'PGRST116') {
+          console.log("Profile not found. Creating new profile.");
+          
+          const { error: createProfileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              name: data.user.email?.split('@')[0] || 'User',
+              email: data.user.email || '',
+              role: 'student'
+            });
+            
+          if (createProfileError) {
+            console.error("Error creating profile:", createProfileError);
+            throw new Error("Failed to create user profile. Please try again.");
+          }
+          
+          // Use basic profile data since we just created it
+          const userData = {
+            id: data.user.id,
+            name: data.user.email?.split('@')[0] || 'User',
+            email: data.user.email || '',
+            role: USER_ROLES.STUDENT,
+            schoolId: null,
+            schoolName: null,
+            token: data.session?.access_token || '',
+          };
+          
+          console.log("New profile created:", userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+          return userData;
+        }
+        
+        throw new Error("Error fetching user profile. Please try again.");
+      }
+        
+      console.log("Profile data retrieved:", profileData);
+
+      // Store user data in localStorage
+      const userData = {
+        id: data.user.id,
+        name: profileData?.name || data.user.email?.split('@')[0] || 'User',
+        email: data.user.email || '',
+        role: profileData?.role || USER_ROLES.STUDENT,
+        schoolId: profileData?.school_id || null,
+        schoolName: profileData?.schools?.name || null,
+        token: data.session?.access_token || '',
+      };
+      
+      console.log("User data prepared for localStorage:", userData);
+
+      localStorage.setItem('user', JSON.stringify(userData));
+      return userData;
     } catch (error) {
       console.error('Login error:', error);
       throw error;
@@ -284,21 +322,98 @@ export const supabaseService = {
         try {
           console.log(`Processing test user: ${user.email}`);
           
-          // Try to register/update the user
-          const result = await supabaseService.register(
-            user.name, 
-            user.email, 
-            defaultPassword, 
-            user.role
-          );
+          // First check if the user already exists in auth
+          const { data: userExists, error: checkError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', user.email)
+            .maybeSingle();
+            
+          if (checkError && checkError.code !== 'PGRST116') {
+            console.error(`Error checking if user exists: ${user.email}`, checkError);
+            throw checkError;
+          }
           
-          console.log(`Registration result for ${user.email}:`, result);
+          let userId;
+          
+          if (userExists?.id) {
+            console.log(`User ${user.email} already exists. Updating profile.`);
+            userId = userExists.id;
+            
+            // Update profile
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({
+                name: user.name,
+                role: validateUserRole(user.role)
+              })
+              .eq('id', userId);
+              
+            if (updateError) {
+              console.error(`Error updating profile for ${user.email}:`, updateError);
+              throw updateError;
+            }
+            
+            results.push({ 
+              ...user, 
+              status: 'Updated', 
+              password: defaultPassword,
+              message: 'User profile updated successfully'
+            });
+            
+            continue;
+          }
+          
+          // User doesn't exist, create a new one
+          console.log(`Creating new user: ${user.email}`);
+          
+          // Create auth user
+          const { data: authData, error: authError } = await supabase.auth.signUp({
+            email: user.email,
+            password: defaultPassword,
+            options: {
+              data: {
+                name: user.name,
+                role: validateUserRole(user.role),
+              },
+            },
+          });
+          
+          if (authError) {
+            console.error(`Error creating auth user for ${user.email}:`, authError);
+            throw authError;
+          }
+          
+          if (!authData.user) {
+            console.error(`Failed to create user ${user.email}, no user returned`);
+            throw new Error('User creation failed');
+          }
+          
+          console.log(`Auth user created for ${user.email} with ID ${authData.user.id}`);
+          userId = authData.user.id;
+          
+          // Create profile manually (this should happen via trigger but let's make sure)
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({
+              id: userId,
+              name: user.name,
+              email: user.email,
+              role: validateUserRole(user.role)
+            });
+            
+          if (profileError) {
+            console.error(`Error creating profile for ${user.email}:`, profileError);
+            throw profileError;
+          }
+          
+          console.log(`Profile created for ${user.email}`);
           
           results.push({ 
             ...user, 
-            status: 'Created/Updated', 
+            status: 'Created', 
             password: defaultPassword,
-            message: result.message || 'User created/updated successfully'
+            message: 'User created successfully'
           });
         } catch (error: any) {
           console.error(`Error creating ${user.role} user:`, error);
