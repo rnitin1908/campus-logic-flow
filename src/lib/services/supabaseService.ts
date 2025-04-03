@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, GenderType, StatusType } from '@/types/student';
 import { Database } from '@/integrations/supabase/types';
@@ -59,10 +60,12 @@ const checkSupabaseAvailability = () => {
 };
 
 // Helper function to safely convert student data without circular references
+// This function uses explicit type casting to prevent infinite type recursion
 function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student | null {
   if (!dbStudent) return null;
   
-  return {
+  // Create a new object with explicit properties to avoid circular references
+  const result: Student = {
     _id: dbStudent.id,
     id: dbStudent.id,
     name: dbStudent.name || '',
@@ -70,10 +73,10 @@ function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student
     rollNumber: dbStudent.roll_number || '',
     roll_number: dbStudent.roll_number,
     department: dbStudent.department || '',
-    status: dbStudent.status as StatusType || 'active',
+    status: (dbStudent.status || 'active') as StatusType,
     dateOfBirth: dbStudent.date_of_birth,
     date_of_birth: dbStudent.date_of_birth,
-    gender: dbStudent.gender as GenderType || 'other',
+    gender: (dbStudent.gender || 'other') as GenderType,
     contactNumber: dbStudent.contact_number,
     contact_number: dbStudent.contact_number,
     address: dbStudent.address || '',
@@ -90,6 +93,8 @@ function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student
     updated_at: dbStudent.updated_at,
     enrollment_date: dbStudent.enrollment_date
   };
+  
+  return result;
 }
 
 // Helper function to validate user role
