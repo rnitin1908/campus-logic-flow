@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GraduationCap, Mail, Lock, LogIn, AlertTriangle, Users } from 'lucide-react';
@@ -43,15 +42,15 @@ const Login = () => {
       const results = await supabaseService.createTestUsers();
       setTestUsersResult(results);
       
-      // Count successful creations
-      const successCount = results.filter(user => 
+      // Count successful creations and existing users
+      const readyToUseCount = results.filter(user => 
         user.status === 'Created' || user.status === 'Exists'
       ).length;
       
-      if (successCount > 0) {
+      if (readyToUseCount > 0) {
         toast({
           title: "Test users processed",
-          description: `${successCount} out of ${results.length} users are ready to use.`,
+          description: `${readyToUseCount} out of ${results.length} users are ready to use.`,
         });
         
         // Pre-fill form with test credentials for convenience

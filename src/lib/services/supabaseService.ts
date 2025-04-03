@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Student, StudentFormData, convertToSupabaseStudent, GenderType, StatusType } from '@/types/student';
 import { Database } from '@/integrations/supabase/types';
@@ -326,7 +325,7 @@ export const supabaseService = {
     localStorage.removeItem('user');
   },
 
-  // Create test users with different roles - fixed version that handles errors better
+  // Create test users with different roles - improved version that handles database type errors
   createTestUsers: async (): Promise<TestUserResult[]> => {
     try {
       checkSupabaseAvailability();
@@ -350,54 +349,75 @@ export const supabaseService = {
       
       const results: TestUserResult[] = [];
       
-      // Create auth users first without profiles to avoid policy issues
+      // Process each test user individually to isolate potential errors
       for (const user of testUsers) {
         try {
           console.log(`Processing test user: ${user.email}`);
           
-          // Try to sign up user in auth
+          // Attempt to sign up the user
           const { data: authData, error: authError } = await supabase.auth.signUp({
             email: user.email,
             password: defaultPassword,
             options: {
               data: {
                 name: user.name,
-                role: user.role,
+                role: validateUserRole(user.role),
               },
             },
           });
           
-          if (authError && !authError.message.includes('already registered')) {
-            console.error(`Error creating auth user for ${user.email}:`, authError);
-            results.push({ 
-              ...user, 
-              status: 'Error', 
-              password: defaultPassword,
-              message: authError.message || 'Unknown error'
-            });
-            continue;
+          // Handle different response cases
+          if (authError) {
+            // Check if this is just a "user exists" error, which we can treat as a success
+            if (authError.message.includes('already registered')) {
+              console.log(`User ${user.email} already exists, proceeding to profile check`);
+              results.push({ 
+                ...user, 
+                status: 'Exists', 
+                password: defaultPassword,
+                message: 'User already exists, can be used for login'
+              });
+              continue;
+            } else {
+              // This is a genuine error
+              console.error(`Error creating auth user for ${user.email}:`, authError);
+              results.push({ 
+                ...user, 
+                status: 'Error', 
+                password: defaultPassword,
+                message: authError.message || 'Unknown error'
+              });
+              continue;
+            }
           }
           
-          // Check if user was created or already exists
-          const userId = authData.user?.id;
-          const isNewUser = !!userId;
-          const userStatus = isNewUser ? 'Created' : 'Exists';
-          
-          results.push({ 
-            ...user, 
-            status: userStatus, 
-            password: defaultPassword,
-            message: isNewUser ? 'User created successfully' : 'User already exists'
-          });
-          
-          console.log(`Auth user ${userStatus.toLowerCase()} for ${user.email}`);
-        } catch (error: any) {
-          console.error(`Error creating ${user.role} user:`, error);
+          // If we got here, the user was created successfully
+          if (authData.user) {
+            console.log(`Auth user created successfully for ${user.email}`);
+            results.push({ 
+              ...user, 
+              status: 'Created', 
+              password: defaultPassword,
+              message: 'User created successfully'
+            });
+          } else {
+            // This should not happen often, but handle it just in case
+            console.warn(`Unexpected response for ${user.email}: No error but no user either`);
+            results.push({ 
+              ...user, 
+              status: 'Warning', 
+              password: defaultPassword,
+              message: 'Unexpected response from signup API'
+            });
+          }
+        } catch (userError: any) {
+          // Catch any unexpected errors for this specific user
+          console.error(`Unexpected error creating ${user.role} user:`, userError);
           results.push({ 
             ...user, 
             status: 'Error', 
             password: defaultPassword,
-            message: error.message || 'Unknown error'
+            message: userError.message || 'Unknown error'
           });
         }
       }
