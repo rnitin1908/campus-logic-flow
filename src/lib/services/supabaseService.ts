@@ -58,13 +58,12 @@ const checkSupabaseAvailability = () => {
   }
 };
 
-// Helper function to safely convert student data without circular references
-// This function uses explicit type casting to prevent infinite type recursion
+// Fixed helper function to safely convert student data without circular references
 function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student | null {
   if (!dbStudent) return null;
   
-  // Create a new object with explicit properties to avoid circular references
-  const result: Student = {
+  // Create a new object with only the needed properties to avoid circular references
+  return {
     _id: dbStudent.id,
     id: dbStudent.id,
     name: dbStudent.name || '',
@@ -92,8 +91,6 @@ function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student
     updated_at: dbStudent.updated_at,
     enrollment_date: dbStudent.enrollment_date
   };
-  
-  return result;
 }
 
 // Helper function to validate user role
@@ -488,7 +485,7 @@ export const supabaseService = {
       
       if (data) {
         for (const student of data) {
-          // Use the intermediate interface to avoid circular references
+          // Map Supabase data to DatabaseStudent interface
           const dbStudent: DatabaseStudent = {
             id: student.id,
             name: student.name,

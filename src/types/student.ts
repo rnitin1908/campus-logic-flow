@@ -85,11 +85,12 @@ export function convertToSupabaseStudent(student: StudentFormData): any {
   };
 }
 
-// Helper function to convert Supabase student to MongoDB style
+// Fixed helper function to convert Supabase student to MongoDB style without circular references
 export function convertToMongoDBStudent(dbStudent: any): Student | null {
   if (!dbStudent) return null;
   
-  return {
+  // Create a new object with explicit properties
+  const result: Student = {
     _id: dbStudent.id || '',
     id: dbStudent.id,
     name: dbStudent.name || '',
@@ -117,4 +118,6 @@ export function convertToMongoDBStudent(dbStudent: any): Student | null {
     updated_at: dbStudent.updated_at,
     enrollment_date: dbStudent.enrollment_date
   };
+  
+  return result;
 }
