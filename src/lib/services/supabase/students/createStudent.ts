@@ -8,15 +8,19 @@ export const createStudent = async (studentData: StudentFormData): Promise<Stude
     // Convert StudentFormData to Supabase format
     const supabaseStudentData = convertFormToSupabaseStudent(studentData);
     
-    const { data, error } = await supabase
+    // Use explicit result handling to avoid deep type instantiation
+    const result = await supabase
       .from('students')
       .insert(supabaseStudentData)
-      .select()
-      .single();
+      .select();
+    
+    const { data, error } = result;
 
     if (error) throw error;
     
-    const dbStudent = convertToDbStudent(data);
+    if (!data || data.length === 0) return null;
+    
+    const dbStudent = convertToDbStudent(data[0]);
     return mapDatabaseToStudent(dbStudent);
   } catch (error) {
     console.error('Create student error:', error);

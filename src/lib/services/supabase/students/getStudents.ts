@@ -15,7 +15,9 @@ export const getStudents = async (schoolId?: string): Promise<Student[]> => {
       query = query.eq('school_id', schoolId);
     }
     
-    const { data, error } = await query;
+    // Use an explicit type annotation to avoid deep instantiation
+    const result = await query;
+    const { data, error } = result;
 
     if (error) throw error;
     
@@ -24,6 +26,7 @@ export const getStudents = async (schoolId?: string): Promise<Student[]> => {
     
     if (data) {
       for (const student of data) {
+        // Use a direct type conversion for database records
         const dbStudent = convertToDbStudent(student);
         const convertedStudent = mapDatabaseToStudent(dbStudent);
         if (convertedStudent) {
@@ -41,11 +44,14 @@ export const getStudents = async (schoolId?: string): Promise<Student[]> => {
 
 export const getStudentById = async (id: string): Promise<Student | null> => {
   try {
-    const { data, error } = await supabase
+    // Use an explicit type annotation to avoid deep instantiation
+    const result = await supabase
       .from('students')
       .select('*')
       .eq('id', id)
       .single();
+
+    const { data, error } = result;
 
     if (error) throw error;
     

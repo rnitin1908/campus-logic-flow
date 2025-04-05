@@ -23,16 +23,20 @@ export const updateStudent = async (id: string, studentData: Partial<Student>): 
     if (studentData.admissionDate) updateData.admission_date = studentData.admissionDate;
     if (studentData.previousSchool) updateData.previous_school = studentData.previousSchool;
     
-    const { data, error } = await supabase
+    // Use explicit result handling to avoid deep type instantiation
+    const result = await supabase
       .from('students')
       .update(updateData)
       .eq('id', id)
-      .select()
-      .single();
+      .select();
+    
+    const { data, error } = result;
 
     if (error) throw error;
     
-    const dbStudent = convertToDbStudent(data);
+    if (!data || data.length === 0) return null;
+    
+    const dbStudent = convertToDbStudent(data[0]);
     return mapDatabaseToStudent(dbStudent);
   } catch (error) {
     console.error('Update student error:', error);
