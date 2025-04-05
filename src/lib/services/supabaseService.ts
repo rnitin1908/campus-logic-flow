@@ -325,7 +325,7 @@ export const supabaseService = {
     localStorage.removeItem('user');
   },
 
-  // Create test users with different roles - improved version that handles database type errors
+  // Create test users with different roles - improved version with better error handling
   createTestUsers: async (): Promise<TestUserResult[]> => {
     try {
       checkSupabaseAvailability();
@@ -354,7 +354,25 @@ export const supabaseService = {
         try {
           console.log(`Processing test user: ${user.email}`);
           
+          // Check if user already exists first
+          const { data: existingUserData, error: existingUserError } = await supabase.auth.signInWithPassword({
+            email: user.email,
+            password: defaultPassword,
+          });
+          
+          if (!existingUserError && existingUserData.user) {
+            console.log(`User ${user.email} already exists`);
+            results.push({ 
+              ...user, 
+              status: 'Exists', 
+              password: defaultPassword,
+              message: 'User already exists, can be used for login'
+            });
+            continue;
+          }
+          
           // Attempt to sign up the user
+          console.log(`Creating new user: ${user.email}`);
           const { data: authData, error: authError } = await supabase.auth.signUp({
             email: user.email,
             password: defaultPassword,
@@ -394,6 +412,25 @@ export const supabaseService = {
           // If we got here, the user was created successfully
           if (authData.user) {
             console.log(`Auth user created successfully for ${user.email}`);
+            
+            try {
+              // Ensure profile exists
+              const { error: profileError } = await supabase
+                .from('profiles')
+                .upsert({
+                  id: authData.user.id,
+                  name: user.name,
+                  email: user.email,
+                  role: validateUserRole(user.role)
+                });
+                
+              if (profileError) {
+                console.warn(`Warning: Could not create profile for ${user.email}:`, profileError);
+              }
+            } catch (profileError) {
+              console.warn(`Warning: Error creating profile for ${user.email}:`, profileError);
+            }
+            
             results.push({ 
               ...user, 
               status: 'Created', 
