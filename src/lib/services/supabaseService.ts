@@ -28,7 +28,7 @@ export interface TestUserResult {
   message?: string;
 }
 
-// Basic database student interface without circular references
+// Basic database student interface explicitly defined to avoid circular references
 interface DatabaseStudent {
   id: string;
   name: string;
@@ -58,11 +58,11 @@ const checkSupabaseAvailability = () => {
   }
 };
 
-// Fixed helper function to safely convert student data without circular references
-function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student | null {
+// Helper function to directly convert database student to application format
+function mapDatabaseToStudent(dbStudent: DatabaseStudent | null): Student | null {
   if (!dbStudent) return null;
   
-  // Create a new object with only the needed properties to avoid circular references
+  // Create a new object with direct properties to prevent circular references
   return {
     _id: dbStudent.id,
     id: dbStudent.id,
@@ -71,10 +71,10 @@ function safeConvertToMongoDBStudent(dbStudent: DatabaseStudent | null): Student
     rollNumber: dbStudent.roll_number || '',
     roll_number: dbStudent.roll_number,
     department: dbStudent.department || '',
-    status: (dbStudent.status || 'active') as StatusType,
+    status: dbStudent.status || 'active',
     dateOfBirth: dbStudent.date_of_birth,
     date_of_birth: dbStudent.date_of_birth,
-    gender: (dbStudent.gender || 'other') as GenderType,
+    gender: dbStudent.gender,
     contactNumber: dbStudent.contact_number,
     contact_number: dbStudent.contact_number,
     address: dbStudent.address || '',
@@ -508,7 +508,7 @@ export const supabaseService = {
             enrollment_date: student.enrollment_date
           };
           
-          const convertedStudent = safeConvertToMongoDBStudent(dbStudent);
+          const convertedStudent = mapDatabaseToStudent(dbStudent);
           if (convertedStudent) {
             students.push(convertedStudent);
           }
@@ -557,7 +557,7 @@ export const supabaseService = {
         enrollment_date: data.enrollment_date
       };
       
-      return safeConvertToMongoDBStudent(dbStudent);
+      return mapDatabaseToStudent(dbStudent);
     } catch (error) {
       console.error('Get student error:', error);
       throw error;
@@ -600,7 +600,7 @@ export const supabaseService = {
         enrollment_date: data.enrollment_date
       };
       
-      return safeConvertToMongoDBStudent(dbStudent);
+      return mapDatabaseToStudent(dbStudent);
     } catch (error) {
       console.error('Create student error:', error);
       throw error;
@@ -636,7 +636,7 @@ export const supabaseService = {
 
       if (error) throw error;
       
-      return safeConvertToMongoDBStudent(data);
+      return mapDatabaseToStudent(data);
     } catch (error) {
       console.error('Update student error:', error);
       throw error;
