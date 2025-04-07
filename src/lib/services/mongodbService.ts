@@ -142,6 +142,37 @@ export const isMongoDBConfigured = () => {
   return !!apiUrl;
 };
 
+// Student-related functions to match Supabase student service
+export const createStudent = async (studentData: any) => {
+  try {
+    const response = await apiClient.post('/students', studentData);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating student:', error);
+    throw error;
+  }
+};
+
+export const updateStudent = async (id: string, studentData: any) => {
+  try {
+    const response = await apiClient.put(`/students/${id}`, studentData);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating student:', error);
+    throw error;
+  }
+};
+
+export const deleteStudent = async (id: string) => {
+  try {
+    const response = await apiClient.delete(`/students/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    throw error;
+  }
+};
+
 // Export MongoDB service
 export const mongodbService = {
   login,
@@ -150,7 +181,11 @@ export const mongodbService = {
   getUserProfile,
   createTestUsers,
   isMongoDBConfigured,
-  USER_ROLES
+  USER_ROLES,
+  // Add student-related functions to the service object
+  createStudent,
+  updateStudent,
+  deleteStudent
 };
 
 export default mongodbService;
