@@ -1,6 +1,7 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, Mail, Lock, UserPlus, AlertTriangle } from 'lucide-react';
+import { GraduationCap, UserPlus, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,21 +9,24 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabaseService } from '@/lib/services';
+import { supabaseService, mongodbService } from '@/lib/services';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { register } = useAuth();
   const isSupabaseConfigured = supabaseService.isSupabaseConfigured();
+  const isMongoDBConfigured = mongodbService.isMongoDBConfigured();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       await register(name, email, password);
@@ -34,15 +38,39 @@ const Register = () => {
       
       // Redirect to login after successful registration
       navigate('/auth/login');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
+      
+      // Get a more specific error message
+      let errorMessage = "Failed to create an account. Please try again.";
+      
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setError(errorMessage);
+      
       toast({
         variant: "destructive",
         title: "Registration failed",
-        description: "Failed to create an account. Please try again.",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getAuthStatusMessage = () => {
+    if (isSupabaseConfigured && isMongoDBConfigured) {
+      return "Both Supabase and MongoDB authentication are configured.";
+    } else if (isSupabaseConfigured) {
+      return "Supabase authentication is configured.";
+    } else if (isMongoDBConfigured) {
+      return "MongoDB authentication is configured.";
+    } else {
+      return "No authentication method is configured. Set up either Supabase or MongoDB.";
     }
   };
 
@@ -61,12 +89,25 @@ const Register = () => {
           </div>
         </div>
 
-        {!isSupabaseConfigured && (
+        {!isSupabaseConfigured && !isMongoDBConfigured && (
           <Alert variant="destructive" className="border-amber-500 bg-amber-50 text-amber-800">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Supabase is not configured. Please set the environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
+              Neither Supabase nor MongoDB API is configured. Authentication will not work properly.
             </AlertDescription>
+          </Alert>
+        )}
+
+        <Alert variant="default" className="border-blue-200 bg-blue-50 text-blue-700">
+          <AlertDescription>
+            {getAuthStatusMessage()}
+          </AlertDescription>
+        </Alert>
+        
+        {error && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
         

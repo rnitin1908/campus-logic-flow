@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabaseService } from '@/lib/services';
+import { supabaseService, mongodbService } from '@/lib/services';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -24,6 +24,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const isSupabaseConfigured = supabaseService.isSupabaseConfigured();
+  const isMongoDBConfigured = mongodbService.isMongoDBConfigured();
 
   useEffect(() => {
     // Pre-fill the email field in development mode for convenience
@@ -41,12 +42,32 @@ const Login = () => {
     try {
       console.log("Starting test user creation process...");
       
-      // First check if Supabase is properly configured
-      if (!isSupabaseConfigured) {
-        throw new Error('Supabase is not properly configured. Please check your environment variables.');
+      let results;
+      
+      // Try Supabase first if configured
+      if (isSupabaseConfigured) {
+        try {
+          console.log("Creating test users via Supabase...");
+          results = await supabaseService.createTestUsers();
+        } catch (supabaseError) {
+          console.error("Error creating Supabase test users:", supabaseError);
+          // Fall back to MongoDB if Supabase fails
+          if (isMongoDBConfigured) {
+            console.log("Falling back to MongoDB for test users...");
+            results = await mongodbService.createTestUsers();
+          } else {
+            throw supabaseError;
+          }
+        }
+      } 
+      // If Supabase is not configured, use MongoDB
+      else if (isMongoDBConfigured) {
+        console.log("Creating test users via MongoDB...");
+        results = await mongodbService.createTestUsers();
+      } else {
+        throw new Error('Neither Supabase nor MongoDB is properly configured');
       }
       
-      const results = await supabaseService.createTestUsers();
       console.log("Test user creation results:", results);
       setTestUsersResult(results);
       
@@ -107,17 +128,10 @@ const Login = () => {
       // Get a more specific error message from the error object
       let errorMessage = "Invalid email or password. Please try again.";
       
-      if (error.message) {
+      if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error.message) {
         errorMessage = error.message;
-      }
-      
-      if (error.code === 'invalid_credentials') {
-        errorMessage = "The email or password you entered is incorrect. Please try again.";
-      }
-      
-      // Handle database policy errors
-      if (error.message && error.message.includes('infinite recursion detected')) {
-        errorMessage = "Database policy error. Please try again or contact support.";
       }
       
       setError(errorMessage);
@@ -129,6 +143,18 @@ const Login = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const getAuthStatusMessage = () => {
+    if (isSupabaseConfigured && isMongoDBConfigured) {
+      return "Both Supabase and MongoDB authentication are configured.";
+    } else if (isSupabaseConfigured) {
+      return "Supabase authentication is configured.";
+    } else if (isMongoDBConfigured) {
+      return "MongoDB authentication is configured.";
+    } else {
+      return "No authentication method is configured. Set up either Supabase or MongoDB.";
     }
   };
 
@@ -147,14 +173,20 @@ const Login = () => {
           </div>
         </div>
         
-        {!isSupabaseConfigured && (
+        {!isSupabaseConfigured && !isMongoDBConfigured && (
           <Alert variant="destructive" className="border-amber-500 bg-amber-50 text-amber-800">
             <AlertTriangle className="h-4 w-4" />
             <AlertDescription>
-              Supabase is not configured. Please set the environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.
+              Neither Supabase nor MongoDB API is configured. Authentication will not work properly.
             </AlertDescription>
           </Alert>
         )}
+
+        <Alert variant="default" className="border-blue-200 bg-blue-50 text-blue-700">
+          <AlertDescription>
+            {getAuthStatusMessage()}
+          </AlertDescription>
+        </Alert>
         
         {error && (
           <Alert variant="destructive">

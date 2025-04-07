@@ -46,79 +46,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if Supabase is configured on component mount
-    if (!supabaseService.isSupabaseConfigured()) {
+    // Check if authentication services are configured
+    const isSupabaseReady = supabaseService.isSupabaseConfigured();
+    const isMongoDBReady = mongodbService.isMongoDBConfigured();
+    
+    if (!isSupabaseReady && !isMongoDBReady) {
       toast({
         title: "Configuration Error",
-        description: "Supabase is not configured. Some features may be unavailable.",
+        description: "Neither Supabase nor MongoDB API is configured. Authentication will not work.",
         variant: "destructive",
       });
-    }
-
-    console.log("Setting up auth state listener");
-    
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log("Auth state changed:", event, !!session);
-        
-        if (event === 'SIGNED_IN' && session) {
-          console.log("User signed in, session established");
-          // We'll use the stored user data if available
-          const storedUser = localStorage.getItem('user');
-          if (storedUser) {
-            const userData = JSON.parse(storedUser);
-            console.log("Using stored user data:", userData);
-            setUser(userData);
-            setIsAuthenticated(true);
-          } else if (session.user?.email) {
-            // If no stored data, defer fetching profile
-            console.log("No stored user data, will fetch profile later");
-            setTimeout(() => {
-              supabaseService.login(session.user!.email!, '')
-                .catch(err => console.error("Error refreshing user data:", err));
-            }, 0);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          console.log("User signed out, clearing session");
-          setUser(null);
-          setIsAuthenticated(false);
-          localStorage.removeItem('user');
-        }
-      }
-    );
-
-    // Check for existing session
-    console.log("Checking for existing session");
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log("Session check result:", !!session);
+    } else if (!isSupabaseReady) {
+      console.log("Supabase is not configured, falling back to MongoDB");
+    } else {
+      console.log("Setting up Supabase auth state listener");
       
-      if (session) {
-        // If we have a valid session but no user data, try to fetch profile
-        const storedUser = localStorage.getItem('user');
-        if (!storedUser && session.user?.email) {
-          console.log("Valid session without stored user data, will fetch profile");
-          // We need to fetch and set up user data asynchronously
-          setTimeout(() => {
-            // We use this trick to avoid blocking the UI with synchronous calls
-            supabaseService.login(session.user!.email!, '').catch((err) => {
-              console.error("Error refreshing user data:", err);
-              // We ignore errors here as this is just an attempt to refresh local data
-            });
-          }, 0);
-        } else if (storedUser) {
-          console.log("Using stored user data with valid session");
-          setUser(JSON.parse(storedUser));
-          setIsAuthenticated(true);
+      // Set up auth state listener
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          console.log("Auth state changed:", event, !!session);
+          
+          if (event === 'SIGNED_IN' && session) {
+            console.log("User signed in, session established");
+            // We'll use the stored user data if available
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              const userData = JSON.parse(storedUser);
+              console.log("Using stored user data:", userData);
+              setUser(userData);
+              setIsAuthenticated(true);
+            } else if (session.user?.email) {
+              // If no stored data, defer fetching profile
+              console.log("No stored user data, will fetch profile later");
+              setTimeout(() => {
+                supabaseService.login(session.user!.email!, '')
+                  .catch(err => console.error("Error refreshing user data:", err));
+              }, 0);
+            }
+          } else if (event === 'SIGNED_OUT') {
+            console.log("User signed out, clearing session");
+            setUser(null);
+            setIsAuthenticated(false);
+            localStorage.removeItem('user');
+          }
         }
-      }
-      setIsLoading(false);
-    });
+      );
 
-    return () => {
-      console.log("Cleaning up auth state subscription");
-      subscription.unsubscribe();
-    };
+      // Check for existing session
+      console.log("Checking for existing session");
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log("Session check result:", !!session);
+        
+        if (session) {
+          // If we have a valid session but no user data, try to fetch profile
+          const storedUser = localStorage.getItem('user');
+          if (!storedUser && session.user?.email) {
+            console.log("Valid session without stored user data, will fetch profile");
+            // We need to fetch and set up user data asynchronously
+            setTimeout(() => {
+              // We use this trick to avoid blocking the UI with synchronous calls
+              supabaseService.login(session.user!.email!, '').catch((err) => {
+                console.error("Error refreshing user data:", err);
+                // We ignore errors here as this is just an attempt to refresh local data
+              });
+            }, 0);
+          } else if (storedUser) {
+            console.log("Using stored user data with valid session");
+            setUser(JSON.parse(storedUser));
+            setIsAuthenticated(true);
+          }
+        }
+        setIsLoading(false);
+      });
+
+      return () => {
+        console.log("Cleaning up auth state subscription");
+        subscription.unsubscribe();
+      };
+    }
+    
+    // If Supabase is not available, just check for stored user
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
@@ -132,24 +140,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // First try Supabase if configured
       if (supabaseService.isSupabaseConfigured()) {
-        console.log("Using Supabase for authentication");
-        const userData = await supabaseService.login(email, password);
-        console.log("Login successful, user data:", userData);
-        setUser(userData);
-        setIsAuthenticated(true);
-        localStorage.setItem('user', JSON.stringify(userData));
-        return;
+        try {
+          console.log("Attempting Supabase authentication");
+          const userData = await supabaseService.login(email, password);
+          console.log("Supabase login successful, user data:", userData);
+          setUser(userData);
+          setIsAuthenticated(true);
+          localStorage.setItem('user', JSON.stringify(userData));
+          return;
+        } catch (supabaseError) {
+          console.error('Supabase login failed, trying MongoDB:', supabaseError);
+          // If Supabase fails, try MongoDB
+        }
       }
       
-      // Fall back to MongoDB service if Supabase is not available
-      console.log("Falling back to MongoDB for authentication");
+      // Fall back to MongoDB service
+      console.log("Using MongoDB for authentication");
       const userData = await mongodbService.login(email, password);
-      console.log("MongoDB login successful");
+      console.log("MongoDB login successful, user data:", userData);
       setUser(userData);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(userData));
     } catch (error) {
-      console.error('Login failed', error);
+      console.error('Login failed:', error);
       setIsAuthenticated(false);
       setUser(null);
       throw error;
@@ -164,18 +177,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // First try Supabase if configured
       if (supabaseService.isSupabaseConfigured()) {
-        await supabaseService.register(name, email, password, role, schoolId);
-        // After successful registration, you might want to automatically log the user in
-        await login(email, password);
-        return;
+        try {
+          console.log("Attempting Supabase registration");
+          const result = await supabaseService.register(name, email, password, role, schoolId);
+          console.log("Supabase registration successful:", result);
+          // After successful registration, you might want to automatically log the user in
+          await login(email, password);
+          return;
+        } catch (supabaseError) {
+          console.error('Supabase registration failed, trying MongoDB:', supabaseError);
+          // If Supabase fails, try MongoDB
+        }
       }
       
-      // Fall back to MongoDB service if Supabase is not available
-      await mongodbService.register(name, email, password);
+      // Fall back to MongoDB service
+      console.log("Using MongoDB for registration");
+      const result = await mongodbService.register(name, email, password, role);
+      console.log("MongoDB registration successful:", result);
       // After successful registration, you might want to automatically log the user in
       await login(email, password);
     } catch (error) {
-      console.error('Registration failed', error);
+      console.error('Registration failed:', error);
       throw error;
     } finally {
       setIsLoading(false);
