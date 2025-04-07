@@ -10,4 +10,5 @@ export const createTestUsers = async () => {
 };
 
 export { USER_ROLES };
-export default supabaseService;
+// Export service as any to avoid deep type instantiation
+export default supabaseService as any;

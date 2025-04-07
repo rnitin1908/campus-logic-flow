@@ -8,16 +8,16 @@ export const getStudents = async (schoolId?: string): Promise<Student[]> => {
   try {
     checkSupabaseAvailability();
     
-    let query = supabase.from('students').select('*');
+    // Use an explicit any type to avoid deep type instantiation
+    const query = supabase.from('students').select('*') as any;
     
     // Filter by school if a school ID is provided
     if (schoolId) {
-      query = query.eq('school_id', schoolId);
+      query.eq('school_id', schoolId);
     }
     
-    // Use an explicit type annotation to avoid deep instantiation
-    const result = await query;
-    const { data, error } = result;
+    // Execute query with explicit casting to avoid deep type instantiation
+    const { data, error } = await query;
 
     if (error) throw error;
     
@@ -44,12 +44,12 @@ export const getStudents = async (schoolId?: string): Promise<Student[]> => {
 
 export const getStudentById = async (id: string): Promise<Student | null> => {
   try {
-    // Use an explicit type annotation to avoid deep instantiation
-    const result = await supabase
+    // Use an explicit casting to avoid deep type instantiation
+    const result = await (supabase
       .from('students')
       .select('*')
       .eq('id', id)
-      .single();
+      .single() as any);
 
     const { data, error } = result;
 

@@ -9,10 +9,10 @@ export const createStudent = async (studentData: StudentFormData): Promise<Stude
     const supabaseStudentData = convertFormToSupabaseStudent(studentData);
     
     // Use explicit result handling to avoid deep type instantiation
-    const result = await supabase
+    const result = await (supabase
       .from('students')
       .insert(supabaseStudentData)
-      .select();
+      .select() as any);
     
     const { data, error } = result;
 
@@ -34,9 +34,10 @@ export const importStudents = async (students: StudentFormData[]): Promise<{ suc
     // Convert each student to Supabase format
     const supabaseStudents = students.map(student => convertFormToSupabaseStudent(student));
     
-    const { error } = await supabase
+    // Use any type to avoid deep instantiation
+    const { error } = await (supabase
       .from('students')
-      .insert(supabaseStudents);
+      .insert(supabaseStudents) as any);
 
     if (error) throw error;
     return { success: true, count: students.length };
