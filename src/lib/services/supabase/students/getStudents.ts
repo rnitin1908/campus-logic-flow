@@ -1,10 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Student } from '@/types/student';
+import { Student, MinimalStudent } from '@/types/student';
 import { checkSupabaseAvailability } from '../utils';
 import { convertToDbStudent, mapDatabaseToStudent } from './mappers';
 
-export const getStudents = async (schoolId?: string): Promise<Student[]> => {
+export const getStudents = async (schoolId?: string): Promise<MinimalStudent[]> => {
   try {
     checkSupabaseAvailability();
     
@@ -22,7 +22,7 @@ export const getStudents = async (schoolId?: string): Promise<Student[]> => {
     if (error) throw error;
     
     // Convert Supabase students to application format
-    const students: Student[] = [];
+    const students: MinimalStudent[] = [];
     
     if (data) {
       for (const student of data) {

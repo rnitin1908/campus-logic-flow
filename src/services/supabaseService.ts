@@ -2,6 +2,7 @@
 // This file is maintained for backward compatibility.
 // Please import from '@/lib/services' instead.
 import { supabaseService, USER_ROLES } from '@/lib/services';
+import { MinimalStudent } from '@/types/student';
 
 // Special function to create test users using Supabase Auth API
 export const createTestUsers = async () => {
@@ -10,5 +11,8 @@ export const createTestUsers = async () => {
 };
 
 export { USER_ROLES };
-// Export service as any to avoid deep type instantiation
-export default supabaseService as any;
+// Export service as MinimalStudent type to avoid deep type instantiation
+export default supabaseService as unknown as {
+  getStudents(): Promise<MinimalStudent[]>;
+  [key: string]: any;
+};

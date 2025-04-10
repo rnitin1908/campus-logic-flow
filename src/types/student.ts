@@ -1,4 +1,3 @@
-
 // Define types compatible with both MongoDB and Supabase schemas
 export interface Student {
   _id: string; // MongoDB ID
@@ -50,6 +49,9 @@ export interface Student {
   updated_at?: string; // Supabase only
   enrollment_date?: string; // Supabase only
 }
+
+// Define a minimal student type to avoid deep type instantiation issues
+export type MinimalStudent = Pick<Student, '_id' | 'id' | 'name' | 'email' | 'rollNumber' | 'roll_number' | 'department' | 'status'>;
 
 export interface StudentFormData {
   name: string;

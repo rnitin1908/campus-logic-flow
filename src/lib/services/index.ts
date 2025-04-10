@@ -17,6 +17,9 @@ import {
   USER_ROLES as MONGODB_USER_ROLES
 } from './mongodbService';
 
+// Use MinimalStudent to reduce type complexity
+import { MinimalStudent } from '@/types/student';
+
 export {
   mongodbService,
   // We don't re-export these since they conflict with Supabase exports
