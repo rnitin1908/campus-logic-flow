@@ -469,7 +469,7 @@ export const supabaseService = {
     try {
       checkSupabaseAvailability();
       
-      let query = supabase.from('students').select('*');
+      let query = supabase.from('students' as any).select('*') as any;
       
       // Filter by school if a school ID is provided
       if (schoolId) {
