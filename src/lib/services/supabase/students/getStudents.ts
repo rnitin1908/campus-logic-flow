@@ -8,8 +8,7 @@ export const getStudents = async (schoolId?: string): Promise<MinimalStudent[]> 
   try {
     checkSupabaseAvailability();
     
-    // Use an explicit any type to avoid deep type instantiation
-    const query = supabase.from('students').select('*') as any;
+    let query = supabase.from('students' as any).select('*') as any;
     
     // Filter by school if a school ID is provided
     if (schoolId) {
