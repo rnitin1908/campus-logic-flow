@@ -1,8 +1,7 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Separator } from '@/components/ui/separator';
-import { useEffect } from 'react';
 import LoginForm from '@/components/auth/LoginForm';
 import TestUserCreator from '@/components/auth/TestUserCreator';
 import AuthStatusAlert from '@/components/auth/AuthStatusAlert';
@@ -14,14 +13,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Pre-fill the email field in development mode for convenience
-    if (process.env.NODE_ENV === 'development') {
-      setEmail('superadmin@campuscore.edu');
-      setPassword('Password123!');
-    }
-  }, []);
-
+  // Effect moved to LoginForm.tsx during refactoring
+  
   const handleTestUserCreationSuccess = (email: string, password: string) => {
     setEmail(email);
     setPassword(password);
