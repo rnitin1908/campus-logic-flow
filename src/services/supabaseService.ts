@@ -17,7 +17,8 @@ export const getStudents = async (schoolId?: string): Promise<MinimalStudent[]> 
   try {
     checkSupabaseAvailability();
     
-    let query = supabase.from('students' as any).select('*') as any;
+    // Updated line as per instructions
+    let query = supabase.from('students').select('*');
     
     // Filter by school if a school ID is provided
     if (schoolId) {
