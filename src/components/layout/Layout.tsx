@@ -1,11 +1,11 @@
 
 import { Outlet } from 'react-router-dom';
-import { Sidebar } from './Sidebar';
+import Sidebar from './Sidebar';
 import { Header } from './Header';
 import { Toaster } from '@/components/ui/toaster';
 import { Toaster as Sonner } from '@/components/ui/sonner';
 
-export function Layout() {
+export function Layout({ children }: { children?: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
@@ -13,7 +13,7 @@ export function Layout() {
         <Header />
         <main className="flex-1 overflow-auto p-6 transition-all">
           <div className="page-transition mx-auto max-w-7xl">
-            <Outlet />
+            {children || <Outlet />}
           </div>
         </main>
       </div>

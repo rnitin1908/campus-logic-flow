@@ -1,3 +1,4 @@
+
 import {
   HomeIcon,
   LayoutDashboard,
@@ -13,7 +14,6 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
-import { isSuperAdmin } from "@/lib/utils";
 import { supabaseService } from "@/lib/services";
 
 interface MenuItem {
@@ -21,6 +21,11 @@ interface MenuItem {
   text: string;
   path: string;
 }
+
+// Helper function to check if a user is a super admin
+const isSuperAdmin = (role?: string) => {
+  return role === 'super_admin';
+};
 
 const Sidebar = () => {
   const location = useLocation();
