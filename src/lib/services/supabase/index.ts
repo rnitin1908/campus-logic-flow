@@ -6,6 +6,7 @@ export * from './schools';
 export * from './staff';
 export * from './utils';
 export * from './admissions';
+export * from './academics';
 
 // Export all services as a combined service for convenience
 import * as authService from './auth';
@@ -14,6 +15,7 @@ import * as schoolService from './schools';
 import * as staffService from './staff';
 import * as utils from './utils';
 import * as admissionService from './admissions';
+import * as academicsService from './academics';
 
 export const USER_ROLES = utils.USER_ROLES;
 
@@ -24,7 +26,8 @@ export const supabaseService = {
   ...schoolService,
   ...staffService,
   ...utils,
-  ...admissionService
+  ...admissionService,
+  ...academicsService
 };
 
 export default supabaseService;

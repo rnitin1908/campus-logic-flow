@@ -1,225 +1,122 @@
-
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { cn } from '@/lib/utils';
 import {
+  HomeIcon,
   LayoutDashboard,
-  Users,
-  UserPlus,
-  School,
-  Calendar,
-  GraduationCap,
-  Clock,
-  BookOpen,
-  CreditCard,
-  Bus,
+  Menu,
   Settings,
-  ChevronRight,
-} from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { ROLES } from '@/contexts/AuthContext';
+  UsersIcon,
+  UserSquare,
+  BookOpen
+} from "lucide-react";
+import { NavLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 
-// Helper function to check if the user has any of the specified roles
-const hasAnyRole = (userRole: string, roles: string[]) => {
-  return roles.includes(userRole);
-};
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
+import { isSuperAdmin } from "@/lib/utils";
+import { supabaseService } from "@/lib/services";
 
-export function Sidebar() {
-  const { user } = useAuth();
+interface MenuItem {
+  icon: React.ReactNode;
+  text: string;
+  path: string;
+}
 
-  const isAdmin = user?.role && [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN].includes(user.role);
-  const isTeacher = user?.role === ROLES.TEACHER;
-  const isParent = user?.role === ROLES.PARENT;
+const Sidebar = () => {
+  const location = useLocation();
+  const [isMobile, setIsMobile] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
 
-  const sidebarLinks = [
-    {
-      name: 'Dashboard',
-      href: '/',
-      icon: LayoutDashboard,
-      allowedRoles: Object.values(ROLES),
-    },
-    {
-      name: 'Students',
-      href: '/students',
-      icon: Users,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
-    },
-    {
-      name: 'Staff',
-      href: '/staff',
-      icon: Users,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN],
-    },
-    {
-      name: 'Admissions',
-      icon: UserPlus,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.PARENT],
-      submenu: [
-        {
-          name: 'Parent Portal',
-          href: '/admissions/parent',
-          allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.PARENT],
-        },
-        {
-          name: 'Admin Portal',
-          href: '/admissions/admin',
-          allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN],
-        },
-      ],
-    },
-    {
-      name: 'Attendance',
-      href: '/attendance',
-      icon: Clock,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
-    },
-    {
-      name: 'Grades',
-      href: '/grades',
-      icon: GraduationCap,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT],
-    },
-    {
-      name: 'Courses',
-      href: '/courses',
-      icon: BookOpen,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
-    },
-    {
-      name: 'Timetable',
-      href: '/timetable',
-      icon: Calendar,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT],
-    },
-    {
-      name: 'Library',
-      href: '/library',
-      icon: BookOpen,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.LIBRARIAN, ROLES.STUDENT, ROLES.TEACHER],
-    },
-    {
-      name: 'Finance',
-      href: '/finance',
-      icon: CreditCard,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.ACCOUNTANT],
-    },
-    {
-      name: 'Transport',
-      href: '/transport',
-      icon: Bus,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TRANSPORT_MANAGER],
-    },
-    {
-      name: 'Settings',
-      href: '/settings',
-      icon: Settings,
-      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN],
-    },
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+      setShowSidebar(window.innerWidth >= 768);
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const toggleSidebar = () => {
+    setShowSidebar(!showSidebar);
+  };
+
+  const menuItems = [
+    { icon: <HomeIcon />, text: "Dashboard", path: "/dashboard" },
+    { icon: <UsersIcon />, text: "Students", path: "/students" },
+    { icon: <UserSquare />, text: "Staff", path: "/staff" },
+    { icon: <BookOpen />, text: "Academic Records", path: "/academics" },
   ];
 
-  // Filter sidebar links based on user role
-  const filteredLinks = sidebarLinks.filter(
-    (link) => user?.role && link.allowedRoles.includes(user.role)
-  );
+  const adminMenuItems = [
+    { icon: <LayoutDashboard />, text: "Admin Dashboard", path: "/admin" },
+    { icon: <Settings />, text: "Settings", path: "/admin/settings" },
+  ];
 
-  const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
-
-  const toggleExpand = (name: string) => {
-    setExpandedItems((prev) =>
-      prev.includes(name)
-        ? prev.filter((item) => item !== name)
-        : [...prev, name]
-    );
+  const renderMenuItems = (items: MenuItem[]) => {
+    return items.map((item) => (
+      <li key={item.text}>
+        <NavLink
+          to={item.path}
+          className={({ isActive }) =>
+            `flex items-center gap-3 p-2 rounded-md hover:bg-secondary ${
+              isActive ? "bg-secondary font-semibold" : ""
+            }`
+          }
+        >
+          {item.icon}
+          {item.text}
+        </NavLink>
+      </li>
+    ));
   };
 
   return (
-    <div className="h-full flex flex-col bg-background border-r">
-      <div className="p-6">
-        <h1 className="text-xl font-semibold tracking-tight">SchoolManager</h1>
-        <p className="text-sm text-muted-foreground mt-1">Education Management</p>
-      </div>
-      <nav className="flex-1 p-3 space-y-1">
-        {filteredLinks.map((link) => {
-          // Check if the link has a submenu
-          const hasSubmenu = link.submenu && link.submenu.length > 0;
-          
-          // For submenu items, check if any submenu items are allowed for the user's role
-          const filteredSubmenu = hasSubmenu 
-            ? link.submenu?.filter((sublink) => user?.role && sublink.allowedRoles.includes(user.role))
-            : [];
-          
-          // Check if we should show this top-level item (either it has no submenu OR it has at least one viewable submenu item)
-          const shouldShowLink = !hasSubmenu || filteredSubmenu.length > 0;
-          
-          const isExpanded = expandedItems.includes(link.name);
-          
-          if (!shouldShowLink) return null;
-          
-          return (
-            <div key={link.name} className="space-y-1">
-              {/* Main link or submenu trigger */}
-              {hasSubmenu ? (
-                <button
-                  onClick={() => toggleExpand(link.name)}
-                  className={cn(
-                    "flex items-center justify-between w-full px-3 py-2 rounded-md text-sm font-medium",
-                    "hover:bg-accent hover:text-accent-foreground",
-                    isExpanded ? "bg-accent/50" : ""
-                  )}
-                >
-                  <div className="flex items-center">
-                    {link.icon && <link.icon className="h-4 w-4 mr-2" />}
-                    <span>{link.name}</span>
-                  </div>
-                  <ChevronRight
-                    className={cn(
-                      "h-4 w-4 transition-transform",
-                      isExpanded ? "rotate-90" : ""
-                    )}
-                  />
-                </button>
-              ) : (
-                <NavLink
-                  to={link.href || "#"}
-                  className={({ isActive }) =>
-                    cn(
-                      "flex items-center px-3 py-2 rounded-md text-sm font-medium",
-                      isActive
-                        ? "bg-accent text-accent-foreground"
-                        : "hover:bg-accent hover:text-accent-foreground"
-                    )
-                  }
-                >
-                  {link.icon && <link.icon className="h-4 w-4 mr-2" />}
-                  <span>{link.name}</span>
-                </NavLink>
-              )}
-              
-              {/* Submenu items */}
-              {hasSubmenu && isExpanded && (
-                <div className="ml-6 space-y-1">
-                  {filteredSubmenu.map((sublink) => (
-                    <NavLink
-                      key={sublink.name}
-                      to={sublink.href || "#"}
-                      className={({ isActive }) =>
-                        cn(
-                          "flex items-center px-3 py-2 rounded-md text-sm",
-                          isActive
-                            ? "bg-accent/70 text-accent-foreground"
-                            : "hover:bg-accent/50 hover:text-accent-foreground"
-                        )
-                      }
-                    >
-                      <span>{sublink.name}</span>
-                    </NavLink>
-                  ))}
-                </div>
-              )}
+    <>
+      {isMobile ? (
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <Menu />
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="w-64">
+            <div className="flex items-center space-x-2">
+              <div className="h-8 w-8 rounded-md bg-muted" />
+              <span className="font-bold">Acme Inc</span>
             </div>
-          );
-        })}
-      </nav>
-    </div>
+            <Separator className="my-4" />
+            <nav className="flex flex-col space-y-1">
+              <ul className="space-y-0.5">
+                {renderMenuItems(menuItems)}
+                {isSuperAdmin(supabaseService.getCurrentUser()?.role) && renderMenuItems(adminMenuItems)}
+              </ul>
+            </nav>
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <aside
+          className={`fixed left-0 top-0 z-20 h-full w-64 border-r bg-background py-4 transition-transform ${
+            showSidebar ? "translate-x-0" : "-translate-x-full"
+          } lg:translate-x-0`}
+        >
+          <div className="flex items-center space-x-2 px-4">
+            <div className="h-8 w-8 rounded-md bg-muted" />
+            <span className="font-bold">Acme Inc</span>
+          </div>
+          <Separator className="my-4" />
+          <nav className="flex flex-col space-y-1">
+            <ul className="space-y-0.5 px-4">
+              {renderMenuItems(menuItems)}
+              {isSuperAdmin(supabaseService.getCurrentUser()?.role) && renderMenuItems(adminMenuItems)}
+            </ul>
+          </nav>
+        </aside>
+      )}
+    </>
   );
-}
+};
+
+export default Sidebar;
