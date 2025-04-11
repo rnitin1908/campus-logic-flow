@@ -16,8 +16,9 @@ import AdminRoutes from '@/pages/admin/AdminRoutes';
 import AdminPortal from '@/pages/Admissions/AdminPortal';
 import ParentPortal from '@/pages/Admissions/ParentPortal';
 
-// Add the import for our new Academics page
+// Add the import for our pages
 import Academics from './pages/Academics';
+import Attendance from './pages/Attendance';
  
 import RoleBasedRoute from '@/components/auth/RoleBasedRoute';
 
@@ -65,6 +66,15 @@ function App() {
             <RoleBasedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN, USER_ROLES.TEACHER, USER_ROLES.STUDENT]}>
               <Layout>
                 <Academics />
+              </Layout>
+            </RoleBasedRoute>
+          } />
+
+          {/* Add the new Attendance route */}
+          <Route path="/attendance" element={
+            <RoleBasedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN, USER_ROLES.TEACHER]}>
+              <Layout>
+                <Attendance />
               </Layout>
             </RoleBasedRoute>
           } />

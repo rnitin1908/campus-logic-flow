@@ -1,127 +1,102 @@
 
-import {
-  HomeIcon,
-  LayoutDashboard,
-  Menu,
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { 
+  BarChart3, 
+  GraduationCap, 
+  Users, 
+  BookOpen,
+  ClipboardCheck,
+  Bell,
   Settings,
-  UsersIcon,
-  UserSquare,
-  BookOpen
-} from "lucide-react";
-import { NavLink, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+  Building,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { USER_ROLES } from '@/lib/services/supabase/utils';
 
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Separator } from "@/components/ui/separator";
-import { supabaseService } from "@/lib/services";
+// Helper function to check if user is super admin
+const isSuperAdmin = (role?: string) => role === USER_ROLES.SUPER_ADMIN;
 
-interface MenuItem {
-  icon: React.ReactNode;
-  text: string;
-  path: string;
-}
+export default function Sidebar() {
+  const { user } = useAuth();
 
-// Helper function to check if a user is a super admin
-const isSuperAdmin = (role?: string) => {
-  return role === 'super_admin';
-};
-
-const Sidebar = () => {
-  const location = useLocation();
-  const [isMobile, setIsMobile] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      setShowSidebar(window.innerWidth >= 768);
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const toggleSidebar = () => {
-    setShowSidebar(!showSidebar);
-  };
-
-  const menuItems = [
-    { icon: <HomeIcon />, text: "Dashboard", path: "/dashboard" },
-    { icon: <UsersIcon />, text: "Students", path: "/students" },
-    { icon: <UserSquare />, text: "Staff", path: "/staff" },
-    { icon: <BookOpen />, text: "Academic Records", path: "/academics" },
+  const links = [
+    {
+      title: "Dashboard",
+      href: "/dashboard",
+      icon: <BarChart3 className="h-5 w-5" />,
+      roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN, USER_ROLES.TEACHER],
+    },
+    {
+      title: "Students",
+      href: "/students",
+      icon: <Users className="h-5 w-5" />,
+      roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN, USER_ROLES.TEACHER],
+    },
+    {
+      title: "Staff",
+      href: "/staff",
+      icon: <Users className="h-5 w-5" />,
+      roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN],
+    },
+    {
+      title: "Academics",
+      href: "/academics",
+      icon: <BookOpen className="h-5 w-5" />,
+      roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN, USER_ROLES.TEACHER, USER_ROLES.STUDENT],
+    },
+    {
+      title: "Attendance",
+      href: "/attendance",
+      icon: <ClipboardCheck className="h-5 w-5" />,
+      roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN, USER_ROLES.TEACHER],
+    },
+    {
+      title: "Admin",
+      href: "/admin",
+      icon: <Settings className="h-5 w-5" />,
+      roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN],
+    },
+    {
+      title: "Admissions",
+      href: user?.role === USER_ROLES.PARENT ? "/admissions/parent" : "/admissions/admin",
+      icon: <Building className="h-5 w-5" />,
+      roles: [USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN, USER_ROLES.PARENT],
+    },
   ];
 
-  const adminMenuItems = [
-    { icon: <LayoutDashboard />, text: "Admin Dashboard", path: "/admin" },
-    { icon: <Settings />, text: "Settings", path: "/admin/settings" },
-  ];
-
-  const renderMenuItems = (items: MenuItem[]) => {
-    return items.map((item) => (
-      <li key={item.text}>
-        <NavLink
-          to={item.path}
-          className={({ isActive }) =>
-            `flex items-center gap-3 p-2 rounded-md hover:bg-secondary ${
-              isActive ? "bg-secondary font-semibold" : ""
-            }`
-          }
-        >
-          {item.icon}
-          {item.text}
-        </NavLink>
-      </li>
-    ));
-  };
+  const filteredLinks = links.filter(
+    link => !link.roles || link.roles.includes(user?.role || '')
+  );
 
   return (
-    <>
-      {isMobile ? (
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Menu />
-            </Button>
-          </SheetTrigger>
-          <SheetContent className="w-64">
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-md bg-muted" />
-              <span className="font-bold">Acme Inc</span>
-            </div>
-            <Separator className="my-4" />
-            <nav className="flex flex-col space-y-1">
-              <ul className="space-y-0.5">
-                {renderMenuItems(menuItems)}
-                {isSuperAdmin(supabaseService.getCurrentUser()?.role) && renderMenuItems(adminMenuItems)}
-              </ul>
-            </nav>
-          </SheetContent>
-        </Sheet>
-      ) : (
-        <aside
-          className={`fixed left-0 top-0 z-20 h-full w-64 border-r bg-background py-4 transition-transform ${
-            showSidebar ? "translate-x-0" : "-translate-x-full"
-          } lg:translate-x-0`}
-        >
-          <div className="flex items-center space-x-2 px-4">
-            <div className="h-8 w-8 rounded-md bg-muted" />
-            <span className="font-bold">Acme Inc</span>
-          </div>
-          <Separator className="my-4" />
-          <nav className="flex flex-col space-y-1">
-            <ul className="space-y-0.5 px-4">
-              {renderMenuItems(menuItems)}
-              {isSuperAdmin(supabaseService.getCurrentUser()?.role) && renderMenuItems(adminMenuItems)}
-            </ul>
-          </nav>
-        </aside>
-      )}
-    </>
+    <div className="flex h-full w-full flex-col border-r bg-card">
+      <div className="flex h-14 items-center border-b px-4">
+        <NavLink to="/" className="flex items-center gap-2 font-semibold">
+          <GraduationCap className="h-6 w-6" />
+          <span className="text-lg">Campus Logic</span>
+        </NavLink>
+      </div>
+      <div className="flex-1 overflow-auto py-2">
+        <nav className="grid items-start px-2 text-sm">
+          {filteredLinks.map((link, index) => (
+            <NavLink
+              key={index}
+              to={link.href}
+              className={({ isActive }) =>
+                cn(
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-muted-foreground hover:text-foreground",
+                  isActive ? "bg-accent text-accent-foreground" : "transparent"
+                )
+              }
+            >
+              {link.icon}
+              <span>{link.title}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+    </div>
   );
-};
-
-export default Sidebar;
+}
