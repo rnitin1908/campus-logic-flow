@@ -15,6 +15,7 @@ import { createAdmissionRequest } from '@/lib/services/supabase/admissions';
 import { supabase } from '@/integrations/supabase/client';
 import DocumentUpload from './DocumentUpload';
 import { Loader2 } from 'lucide-react';
+import { AdmissionRequestFormData } from '@/types/admission';
 
 const formSchema = z.object({
   student_name: z.string().min(2, { message: "Student name must be at least 2 characters." }),
@@ -30,6 +31,8 @@ const formSchema = z.object({
   notes: z.string().optional()
 });
 
+type FormValues = z.infer<typeof formSchema>;
+
 type School = {
   id: string;
   name: string;
@@ -42,7 +45,7 @@ const NewAdmissionRequest = () => {
   const [schools, setSchools] = useState<School[]>([]);
   const [admissionId, setAdmissionId] = useState<string | null>(null);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       student_name: "",
@@ -72,7 +75,7 @@ const NewAdmissionRequest = () => {
     fetchSchools();
   }, [toast]);
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: FormValues) => {
     if (!user?.id) {
       toast({
         title: "Authentication required",
@@ -84,7 +87,22 @@ const NewAdmissionRequest = () => {
 
     setIsSubmitting(true);
     try {
-      const result = await createAdmissionRequest(values, user.id);
+      // Convert form values to the correct type
+      const requestData: AdmissionRequestFormData = {
+        student_name: values.student_name,
+        date_of_birth: values.date_of_birth,
+        gender: values.gender,
+        address: values.address,
+        contact_number: values.contact_number,
+        email: values.email,
+        previous_school: values.previous_school,
+        grade_applying_for: values.grade_applying_for,
+        academic_year: values.academic_year,
+        school_id: values.school_id,
+        notes: values.notes
+      };
+      
+      const result = await createAdmissionRequest(requestData, user.id);
       setAdmissionId(result.id);
       
       toast({

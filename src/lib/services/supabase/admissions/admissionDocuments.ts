@@ -43,7 +43,7 @@ export const uploadAdmissionDocument = async (
     
     if (error) throw error;
     
-    return data as AdmissionDocument;
+    return data as unknown as AdmissionDocument;
   } catch (error) {
     console.error('Upload admission document error:', error);
     throw error;

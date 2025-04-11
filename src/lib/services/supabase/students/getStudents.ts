@@ -1,41 +1,26 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Student, MinimalStudent } from '@/types/student';
+import { mapSupabaseStudentToStudent } from './mappers';
 import { checkSupabaseAvailability } from '../utils';
-import { convertToDbStudent, mapDatabaseToStudent } from './mappers';
 
-export const getStudents = async (schoolId?: string): Promise<MinimalStudent[]> => {
+export const getStudents = async (schoolId?: string): Promise<Student[]> => {
   try {
     checkSupabaseAvailability();
     
-    // Use direct query formation without excessive type assertions
-    let query = supabase.from('students');
-    
-    // Filter by school if a school ID is provided
+    let query = supabase
+      .from('students')
+      .select('*');
+
     if (schoolId) {
-      query = query.eq('school_id', schoolId);
+      // Use as any to avoid deep instantiation error
+      (query as any) = (query as any).eq('school_id', schoolId);
     }
     
-    // Execute query
-    const { data, error } = await query.select('*');
-
+    const { data, error } = await query;
     if (error) throw error;
     
-    // Convert Supabase students to application format
-    const students: MinimalStudent[] = [];
-    
-    if (data) {
-      for (const student of data) {
-        // Use a direct type conversion for database records
-        const dbStudent = convertToDbStudent(student);
-        const convertedStudent = mapDatabaseToStudent(dbStudent);
-        if (convertedStudent) {
-          students.push(convertedStudent);
-        }
-      }
-    }
-    
-    return students;
+    return (data || []).map(mapSupabaseStudentToStudent);
   } catch (error) {
     console.error('Get students error:', error);
     throw error;
@@ -44,21 +29,59 @@ export const getStudents = async (schoolId?: string): Promise<MinimalStudent[]> 
 
 export const getStudentById = async (id: string): Promise<Student | null> => {
   try {
-    // Use direct query formation without excessive type assertions
+    checkSupabaseAvailability();
+    
     const { data, error } = await supabase
       .from('students')
-      .select('*')
+      .select(`
+        *,
+        parent_info(*),
+        emergency_contacts(*),
+        health_info(
+            *,
+            allergies(*),
+            medical_conditions(*)
+        ),
+        documents(*)
+      `)
       .eq('id', id)
       .single();
-
+    
     if (error) throw error;
     
-    if (!data) return null;
-    
-    const dbStudent = convertToDbStudent(data);
-    return mapDatabaseToStudent(dbStudent);
+    return data ? mapSupabaseStudentToStudent(data) : null;
   } catch (error) {
-    console.error('Get student error:', error);
+    console.error('Get student by id error:', error);
+    return null;
+  }
+};
+
+export const getStudentsForExport = async (schoolId?: string): Promise<MinimalStudent[]> => {
+  try {
+    checkSupabaseAvailability();
+    
+    let query = supabase
+      .from('students')
+      .select('id, name, email, roll_number, department, status');
+
+    if (schoolId) {
+      // Use as any to avoid deep instantiation error
+      (query as any) = (query as any).eq('school_id', schoolId);
+    }
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    
+    return (data || []).map((student: any) => ({
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      rollNumber: student.roll_number,
+      department: student.department,
+      status: student.status
+    }));
+  } catch (error) {
+    console.error('Get students for export error:', error);
     throw error;
   }
 };

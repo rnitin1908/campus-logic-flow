@@ -47,9 +47,10 @@ export const updateAdmissionStatus = async (
   try {
     checkSupabaseAvailability();
     
-    const updateData: { status: AdmissionStatus; notes?: string } = { status };
+    // Create update object
+    const updateData: any = { status };
     
-    if (notes) {
+    if (notes !== undefined) {
       updateData.notes = notes;
     }
     

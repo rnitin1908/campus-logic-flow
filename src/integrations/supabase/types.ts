@@ -9,6 +9,106 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admission_documents: {
+        Row: {
+          admission_id: string
+          id: string
+          name: string
+          type: string
+          uploaded_at: string | null
+          url: string
+        }
+        Insert: {
+          admission_id: string
+          id?: string
+          name: string
+          type: string
+          uploaded_at?: string | null
+          url: string
+        }
+        Update: {
+          admission_id?: string
+          id?: string
+          name?: string
+          type?: string
+          uploaded_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admission_documents_admission_id_fkey"
+            columns: ["admission_id"]
+            isOneToOne: false
+            referencedRelation: "admission_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      admission_requests: {
+        Row: {
+          academic_year: string
+          address: string | null
+          contact_number: string | null
+          created_at: string | null
+          date_of_birth: string | null
+          email: string | null
+          gender: Database["public"]["Enums"]["gender_type"] | null
+          grade_applying_for: string
+          id: string
+          notes: string | null
+          parent_id: string
+          previous_school: string | null
+          school_id: string | null
+          status: Database["public"]["Enums"]["admission_status"]
+          student_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          academic_year: string
+          address?: string | null
+          contact_number?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          gender?: Database["public"]["Enums"]["gender_type"] | null
+          grade_applying_for: string
+          id?: string
+          notes?: string | null
+          parent_id: string
+          previous_school?: string | null
+          school_id?: string | null
+          status?: Database["public"]["Enums"]["admission_status"]
+          student_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          academic_year?: string
+          address?: string | null
+          contact_number?: string | null
+          created_at?: string | null
+          date_of_birth?: string | null
+          email?: string | null
+          gender?: Database["public"]["Enums"]["gender_type"] | null
+          grade_applying_for?: string
+          id?: string
+          notes?: string | null
+          parent_id?: string
+          previous_school?: string | null
+          school_id?: string | null
+          status?: Database["public"]["Enums"]["admission_status"]
+          student_name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admission_requests_school_id_fkey"
+            columns: ["school_id"]
+            isOneToOne: false
+            referencedRelation: "schools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       allergies: {
         Row: {
           created_at: string | null
@@ -443,6 +543,12 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      admission_status:
+        | "pending"
+        | "reviewing"
+        | "approved"
+        | "rejected"
+        | "waitlisted"
       gender_type: "male" | "female" | "other"
       status_type:
         | "active"
@@ -577,6 +683,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      admission_status: [
+        "pending",
+        "reviewing",
+        "approved",
+        "rejected",
+        "waitlisted",
+      ],
       gender_type: ["male", "female", "other"],
       status_type: [
         "active",
