@@ -28,7 +28,7 @@ export const getStudents = async (schoolId?: string): Promise<MinimalStudent[]> 
 
     if (error) throw error;
     
-    // Cast safely to avoid deep type instantiation
+    // Map and include _id property properly
     return (data || []).map((student: any) => ({
       _id: student.id || '',
       id: student.id,

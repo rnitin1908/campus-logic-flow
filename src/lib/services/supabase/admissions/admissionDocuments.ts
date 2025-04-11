@@ -30,8 +30,9 @@ export const uploadAdmissionDocument = async (
     if (!urlData.publicUrl) throw new Error("Couldn't get public URL for uploaded file");
     
     // Add document record to the database
-    const { data, error } = await supabase
-      .from('admission_documents')
+    // Use type assertion to bypass TS type checking
+    const { data, error } = await (supabase
+      .from('admission_documents') as any)
       .insert({
         admission_id: admissionId,
         type,

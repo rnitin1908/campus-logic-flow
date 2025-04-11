@@ -1,7 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Student, MinimalStudent } from '@/types/student';
-import { mapSupabaseStudentToStudent } from './mappers';
+import { mapDatabaseToStudent } from './mappers';
 import { checkSupabaseAvailability } from '../utils';
 
 export const getStudents = async (schoolId?: string): Promise<Student[]> => {
@@ -20,7 +20,7 @@ export const getStudents = async (schoolId?: string): Promise<Student[]> => {
     const { data, error } = await query;
     if (error) throw error;
     
-    return (data || []).map(mapSupabaseStudentToStudent);
+    return (data || []).map(student => mapDatabaseToStudent(student) as Student);
   } catch (error) {
     console.error('Get students error:', error);
     throw error;
@@ -49,7 +49,7 @@ export const getStudentById = async (id: string): Promise<Student | null> => {
     
     if (error) throw error;
     
-    return data ? mapSupabaseStudentToStudent(data) : null;
+    return data ? mapDatabaseToStudent(data) as Student : null;
   } catch (error) {
     console.error('Get student by id error:', error);
     return null;
@@ -73,10 +73,12 @@ export const getStudentsForExport = async (schoolId?: string): Promise<MinimalSt
     if (error) throw error;
     
     return (data || []).map((student: any) => ({
+      _id: student.id, // Add _id property which was missing
       id: student.id,
       name: student.name,
       email: student.email,
       rollNumber: student.roll_number,
+      roll_number: student.roll_number,
       department: student.department,
       status: student.status
     }));

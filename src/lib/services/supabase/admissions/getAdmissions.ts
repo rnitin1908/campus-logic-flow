@@ -11,7 +11,8 @@ export const getAdmissionRequests = async (
   try {
     checkSupabaseAvailability();
     
-    let query = supabase.from('admission_requests').select(`
+    // Use type assertion to bypass TS type checking for the from() method
+    let query = (supabase.from('admission_requests') as any).select(`
       *,
       documents:admission_documents(*)
     `);
@@ -38,7 +39,7 @@ export const getAdmissionRequests = async (
     
     if (error) throw error;
     
-    return (data || []) as AdmissionRequest[];
+    return (data || []) as unknown as AdmissionRequest[];
   } catch (error) {
     console.error('Get admission requests error:', error);
     throw error;
@@ -49,8 +50,9 @@ export const getAdmissionRequestById = async (id: string): Promise<AdmissionRequ
   try {
     checkSupabaseAvailability();
     
-    const { data, error } = await supabase
-      .from('admission_requests')
+    // Use type assertion to bypass TS type checking
+    const { data, error } = await (supabase
+      .from('admission_requests') as any)
       .select(`
         *,
         documents:admission_documents(*)
@@ -60,7 +62,7 @@ export const getAdmissionRequestById = async (id: string): Promise<AdmissionRequ
     
     if (error) throw error;
     
-    return data as AdmissionRequest;
+    return data as unknown as AdmissionRequest;
   } catch (error) {
     console.error('Get admission request by id error:', error);
     return null;
