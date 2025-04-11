@@ -8,15 +8,15 @@ export const getStudents = async (schoolId?: string): Promise<MinimalStudent[]> 
   try {
     checkSupabaseAvailability();
     
-    // Using type assertion to avoid deep type instantiation
-    const query = supabase.from('students') as any;
+    // Use direct query formation without excessive type assertions
+    let query = supabase.from('students');
     
     // Filter by school if a school ID is provided
     if (schoolId) {
-      query.eq('school_id', schoolId);
+      query = query.eq('school_id', schoolId);
     }
     
-    // Execute query with explicit casting to avoid deep type instantiation
+    // Execute query
     const { data, error } = await query.select('*');
 
     if (error) throw error;
@@ -44,14 +44,12 @@ export const getStudents = async (schoolId?: string): Promise<MinimalStudent[]> 
 
 export const getStudentById = async (id: string): Promise<Student | null> => {
   try {
-    // Use an explicit casting to avoid deep type instantiation
-    const result = await (supabase
+    // Use direct query formation without excessive type assertions
+    const { data, error } = await supabase
       .from('students')
       .select('*')
       .eq('id', id)
-      .single() as any);
-
-    const { data, error } = result;
+      .single();
 
     if (error) throw error;
     

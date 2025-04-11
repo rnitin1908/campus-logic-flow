@@ -15,6 +15,8 @@ import Register from "./pages/Auth/Register";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 import CreateUsers from "./pages/Admin/CreateUsers";
+import ParentPortal from "./pages/Admissions/ParentPortal";
+import AdminPortal from "./pages/Admissions/AdminPortal";
 
 // Create a new QueryClient instance
 const queryClient = new QueryClient();
@@ -61,6 +63,19 @@ const App = () => (
               <Route path="/staff" element={
                 <RoleBasedRoute allowedRoles={adminRoutes}>
                   <Staff />
+                </RoleBasedRoute>
+              } />
+              
+              {/* Admission Portals */}
+              <Route path="/admissions/parent" element={
+                <RoleBasedRoute allowedRoles={[...adminRoutes, ...parentRoutes]}>
+                  <ParentPortal />
+                </RoleBasedRoute>
+              } />
+              
+              <Route path="/admissions/admin" element={
+                <RoleBasedRoute allowedRoles={adminRoutes}>
+                  <AdminPortal />
                 </RoleBasedRoute>
               } />
               

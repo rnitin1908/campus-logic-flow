@@ -17,15 +17,10 @@ export const getStudents = async (schoolId?: string): Promise<MinimalStudent[]> 
   try {
     checkSupabaseAvailability();
     
-    // Using type assertion to avoid deep type instantiation
-    const query = supabase.from('students') as any;
-    
-    // Filter by school if a school ID is provided
-    if (schoolId) {
-      query.eq('school_id', schoolId);
-    }
-    
-    const { data, error } = await query.select('*');
+    // Using direct query formation without type assertions on the query itself
+    const { data, error } = await supabase
+      .from('students')
+      .select('*');
 
     if (error) throw error;
     

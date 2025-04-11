@@ -1,201 +1,225 @@
-import { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+
+import React from 'react';
+import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { useAuth, ROLES } from '@/contexts/AuthContext';
-import { 
-  ChevronLeft, ChevronRight, Users, BookOpen, 
-  Calendar, ClipboardCheck, GraduationCap, Building,
-  Clock, LayoutDashboard, Settings, LogOut, 
-  BookOpenCheck, DollarSign, Bus, UserPlus, Library,
-  Shield
+import {
+  LayoutDashboard,
+  Users,
+  UserPlus,
+  School,
+  Calendar,
+  GraduationCap,
+  Clock,
+  BookOpen,
+  CreditCard,
+  Bus,
+  Settings,
+  ChevronRight,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { ROLES } from '@/contexts/AuthContext';
 
-interface NavItemProps {
-  icon: React.ElementType;
-  label: string;
-  href: string;
-  isCollapsed: boolean;
-  isActive: boolean;
-}
-
-const NavItem = ({ icon: Icon, label, href, isCollapsed, isActive }: NavItemProps) => {
-  return (
-    <Link to={href} className="w-full">
-      <Button
-        variant="ghost"
-        className={cn(
-          "w-full justify-start gap-3 px-3 py-6",
-          isActive ? "bg-accent text-accent-foreground" : "hover:bg-accent hover:text-accent-foreground",
-          isCollapsed && "justify-center px-0"
-        )}
-      >
-        <Icon className={cn("h-5 w-5", isActive && "text-primary")} />
-        {!isCollapsed && <span>{label}</span>}
-      </Button>
-    </Link>
-  );
+// Helper function to check if the user has any of the specified roles
+const hasAnyRole = (userRole: string, roles: string[]) => {
+  return roles.includes(userRole);
 };
 
 export function Sidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, logout, hasRole } = useAuth();
-  
-  const handleLogout = () => {
-    logout();
-    navigate('/auth/login');
-  };
+  const { user } = useAuth();
 
-  // Define navigation items with role permissions
-  const getNavItems = () => {
-    // Dashboard is visible to everyone
-    const items = [
-      { icon: LayoutDashboard, label: 'Dashboard', href: '/' },
-    ];
+  const isAdmin = user?.role && [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN].includes(user.role);
+  const isTeacher = user?.role === ROLES.TEACHER;
+  const isParent = user?.role === ROLES.PARENT;
 
-    // Admin and teacher access
-    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER])) {
-      items.push({ icon: Users, label: 'Students', href: '/students' });
-    }
-
-    // Admin only access
-    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN])) {
-      items.push({ icon: Users, label: 'Staff', href: '/staff' });
-    }
-
-    // Super admin only
-    if (hasRole([ROLES.SUPER_ADMIN])) {
-      items.push({ icon: Building, label: 'Schools', href: '/schools' });
-      items.push({ icon: Shield, label: 'Create Users', href: '/admin/create-users' });
-    }
-
-    // Admin and teacher access
-    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER])) {
-      items.push({ icon: ClipboardCheck, label: 'Attendance', href: '/attendance' });
-      items.push({ icon: GraduationCap, label: 'Grades', href: '/grades' });
-      items.push({ icon: BookOpen, label: 'Courses', href: '/courses' });
-    }
-
-    // Admin, teacher, student and parent access
-    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT])) {
-      items.push({ icon: Clock, label: 'Timetable', href: '/timetable' });
-    }
-    
-    // Library access
-    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.LIBRARIAN, ROLES.TEACHER, ROLES.STUDENT])) {
-      items.push({ icon: Library, label: 'Library', href: '/library' });
-    }
-
-    // Finance access
-    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.ACCOUNTANT])) {
-      items.push({ icon: DollarSign, label: 'Finance', href: '/finance' });
-    }
-
-    // Transport access
-    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TRANSPORT_MANAGER])) {
-      items.push({ icon: Bus, label: 'Transport', href: '/transport' });
-    }
-
-    // Admissions access
-    if (hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.RECEPTIONIST])) {
-      items.push({ icon: UserPlus, label: 'Admissions', href: '/admissions' });
-    }
-
-    return items;
-  };
-  
-  const navItems = getNavItems();
-  
-  // ... keep existing code for bottomNavItems and return statement
-  const bottomNavItems = [
-    // Settings only for admins
-    ...(hasRole([ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN]) 
-      ? [{ icon: Settings, label: 'Settings', href: '/settings' }] 
-      : []),
-    { icon: LogOut, label: 'Logout', href: '#', onClick: handleLogout },
+  const sidebarLinks = [
+    {
+      name: 'Dashboard',
+      href: '/',
+      icon: LayoutDashboard,
+      allowedRoles: Object.values(ROLES),
+    },
+    {
+      name: 'Students',
+      href: '/students',
+      icon: Users,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
+    },
+    {
+      name: 'Staff',
+      href: '/staff',
+      icon: Users,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN],
+    },
+    {
+      name: 'Admissions',
+      icon: UserPlus,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.PARENT],
+      submenu: [
+        {
+          name: 'Parent Portal',
+          href: '/admissions/parent',
+          allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.PARENT],
+        },
+        {
+          name: 'Admin Portal',
+          href: '/admissions/admin',
+          allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN],
+        },
+      ],
+    },
+    {
+      name: 'Attendance',
+      href: '/attendance',
+      icon: Clock,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
+    },
+    {
+      name: 'Grades',
+      href: '/grades',
+      icon: GraduationCap,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT],
+    },
+    {
+      name: 'Courses',
+      href: '/courses',
+      icon: BookOpen,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER],
+    },
+    {
+      name: 'Timetable',
+      href: '/timetable',
+      icon: Calendar,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TEACHER, ROLES.STUDENT, ROLES.PARENT],
+    },
+    {
+      name: 'Library',
+      href: '/library',
+      icon: BookOpen,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.LIBRARIAN, ROLES.STUDENT, ROLES.TEACHER],
+    },
+    {
+      name: 'Finance',
+      href: '/finance',
+      icon: CreditCard,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.ACCOUNTANT],
+    },
+    {
+      name: 'Transport',
+      href: '/transport',
+      icon: Bus,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN, ROLES.TRANSPORT_MANAGER],
+    },
+    {
+      name: 'Settings',
+      href: '/settings',
+      icon: Settings,
+      allowedRoles: [ROLES.SUPER_ADMIN, ROLES.SCHOOL_ADMIN],
+    },
   ];
 
+  // Filter sidebar links based on user role
+  const filteredLinks = sidebarLinks.filter(
+    (link) => user?.role && link.allowedRoles.includes(user.role)
+  );
+
+  const [expandedItems, setExpandedItems] = React.useState<string[]>([]);
+
+  const toggleExpand = (name: string) => {
+    setExpandedItems((prev) =>
+      prev.includes(name)
+        ? prev.filter((item) => item !== name)
+        : [...prev, name]
+    );
+  };
+
   return (
-    <div
-      className={cn(
-        "flex flex-col border-r bg-card transition-all duration-300 ease-in-out",
-        isCollapsed ? "w-[70px]" : "w-[240px]"
-      )}
-    >
-      <div className="flex h-16 items-center justify-between px-3 py-4">
-        {!isCollapsed && (
-          <div className="flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
-            <span className="text-lg font-semibold">CampusCore</span>
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="ml-auto"
-          onClick={() => setIsCollapsed(!isCollapsed)}
-        >
-          {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-        </Button>
+    <div className="h-full flex flex-col bg-background border-r">
+      <div className="p-6">
+        <h1 className="text-xl font-semibold tracking-tight">SchoolManager</h1>
+        <p className="text-sm text-muted-foreground mt-1">Education Management</p>
       </div>
-      
-      {!isCollapsed && user && (
-        <div className="px-4 py-2">
-          <p className="text-sm font-medium">{user.name}</p>
-          <p className="text-xs text-muted-foreground capitalize">{user.role.replace('_', ' ')}</p>
-          {user.schoolName && (
-            <p className="text-xs text-muted-foreground">{user.schoolName}</p>
-          )}
-        </div>
-      )}
-      
-      <Separator />
-      
-      <div className="flex flex-1 flex-col gap-2 px-2 py-4">
-        {navItems.map((item) => (
-          <NavItem
-            key={item.href}
-            icon={item.icon}
-            label={item.label}
-            href={item.href}
-            isCollapsed={isCollapsed}
-            isActive={location.pathname === item.href}
-          />
-        ))}
-      </div>
-      
-      <Separator />
-      
-      <div className="flex flex-col gap-2 px-2 py-4">
-        {bottomNavItems.map((item) => (
-          <div key={item.label} className="w-full">
-            {item.onClick ? (
-              <Button
-                variant="ghost"
-                className={cn(
-                  "w-full justify-start gap-3 px-3 py-6",
-                  isCollapsed && "justify-center px-0"
-                )}
-                onClick={item.onClick}
-              >
-                <item.icon className="h-5 w-5" />
-                {!isCollapsed && <span>{item.label}</span>}
-              </Button>
-            ) : (
-              <NavItem
-                icon={item.icon}
-                label={item.label}
-                href={item.href}
-                isCollapsed={isCollapsed}
-                isActive={location.pathname === item.href}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      <nav className="flex-1 p-3 space-y-1">
+        {filteredLinks.map((link) => {
+          // Check if the link has a submenu
+          const hasSubmenu = link.submenu && link.submenu.length > 0;
+          
+          // For submenu items, check if any submenu items are allowed for the user's role
+          const filteredSubmenu = hasSubmenu 
+            ? link.submenu?.filter((sublink) => user?.role && sublink.allowedRoles.includes(user.role))
+            : [];
+          
+          // Check if we should show this top-level item (either it has no submenu OR it has at least one viewable submenu item)
+          const shouldShowLink = !hasSubmenu || filteredSubmenu.length > 0;
+          
+          const isExpanded = expandedItems.includes(link.name);
+          
+          if (!shouldShowLink) return null;
+          
+          return (
+            <div key={link.name} className="space-y-1">
+              {/* Main link or submenu trigger */}
+              {hasSubmenu ? (
+                <button
+                  onClick={() => toggleExpand(link.name)}
+                  className={cn(
+                    "flex items-center justify-between w-full px-3 py-2 rounded-md text-sm font-medium",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    isExpanded ? "bg-accent/50" : ""
+                  )}
+                >
+                  <div className="flex items-center">
+                    {link.icon && <link.icon className="h-4 w-4 mr-2" />}
+                    <span>{link.name}</span>
+                  </div>
+                  <ChevronRight
+                    className={cn(
+                      "h-4 w-4 transition-transform",
+                      isExpanded ? "rotate-90" : ""
+                    )}
+                  />
+                </button>
+              ) : (
+                <NavLink
+                  to={link.href || "#"}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center px-3 py-2 rounded-md text-sm font-medium",
+                      isActive
+                        ? "bg-accent text-accent-foreground"
+                        : "hover:bg-accent hover:text-accent-foreground"
+                    )
+                  }
+                >
+                  {link.icon && <link.icon className="h-4 w-4 mr-2" />}
+                  <span>{link.name}</span>
+                </NavLink>
+              )}
+              
+              {/* Submenu items */}
+              {hasSubmenu && isExpanded && (
+                <div className="ml-6 space-y-1">
+                  {filteredSubmenu.map((sublink) => (
+                    <NavLink
+                      key={sublink.name}
+                      to={sublink.href || "#"}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center px-3 py-2 rounded-md text-sm",
+                          isActive
+                            ? "bg-accent/70 text-accent-foreground"
+                            : "hover:bg-accent/50 hover:text-accent-foreground"
+                        )
+                      }
+                    >
+                      <span>{sublink.name}</span>
+                    </NavLink>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </nav>
     </div>
   );
 }
