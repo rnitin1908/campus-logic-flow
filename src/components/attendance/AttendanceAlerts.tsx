@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -107,7 +106,7 @@ const AttendanceAlerts = () => {
 
   const handleSendAlert = (alertId: string) => {
     const updatedAlerts = alerts.map(alert => 
-      alert.id === alertId ? { ...alert, status: 'sent' } : alert
+      alert.id === alertId ? { ...alert, status: 'sent' as const } : alert
     );
     
     setAlerts(updatedAlerts);
@@ -121,7 +120,7 @@ const AttendanceAlerts = () => {
 
   const handleResolveAlert = (alertId: string) => {
     const updatedAlerts = alerts.map(alert => 
-      alert.id === alertId ? { ...alert, status: 'resolved' } : alert
+      alert.id === alertId ? { ...alert, status: 'resolved' as const } : alert
     );
     
     setAlerts(updatedAlerts);

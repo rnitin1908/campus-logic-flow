@@ -12,17 +12,28 @@ import { Check, X, Clock, CalendarDays } from 'lucide-react';
 import { format } from 'date-fns';
 import DatePicker from '@/components/attendance/DatePicker';
 
-interface Student {
+// Create a specific interface for students with attendance status
+interface AttendanceStudent {
   id: string;
   name: string;
   rollNumber: string;
   department: string;
-  status?: 'present' | 'absent' | 'late' | '';
+  status: '' | 'present' | 'absent' | 'late';
+}
+
+// Interface for analytics data
+interface AttendanceAnalytics {
+  date: string;
+  presentCount: number;
+  absentCount: number;
+  lateCount: number;
+  totalCount: number;
+  presentPercentage: number;
 }
 
 const AttendanceTracker = () => {
   const { toast } = useToast();
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<AttendanceStudent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [isSaving, setIsSaving] = useState(false);
@@ -36,8 +47,11 @@ const AttendanceTracker = () => {
         const data = await supabaseService.getStudents();
         
         // Initialize attendance status for all students
-        const studentsWithStatus = data.map(student => ({
-          ...student,
+        const studentsWithStatus: AttendanceStudent[] = data.map(student => ({
+          id: student.id || student._id,
+          name: student.name,
+          rollNumber: student.rollNumber || student.roll_number || '',
+          department: student.department,
           status: ''
         }));
         
@@ -61,7 +75,7 @@ const AttendanceTracker = () => {
   }, [toast]);
 
   // Fetch attendance records for a specific date
-  const fetchAttendanceForDate = async (date: Date, studentsList: Student[]) => {
+  const fetchAttendanceForDate = async (date: Date, studentsList: AttendanceStudent[]) => {
     try {
       setIsLoading(true);
       
@@ -78,7 +92,7 @@ const AttendanceTracker = () => {
           const savedStatus = attendanceData.find((a: any) => a.studentId === student.id);
           return {
             ...student,
-            status: savedStatus ? savedStatus.status : '',
+            status: savedStatus ? (savedStatus.status as '' | 'present' | 'absent' | 'late') : '',
           };
         });
         
@@ -87,7 +101,7 @@ const AttendanceTracker = () => {
         // Reset attendance status if no data exists for this date
         const resetStudents = studentsList.map(student => ({
           ...student,
-          status: ''
+          status: '' as const
         }));
         
         setStudents(resetStudents);
@@ -174,13 +188,13 @@ const AttendanceTracker = () => {
   };
 
   // Update analytics data
-  const updateAttendanceAnalytics = (date: string, students: Student[]) => {
+  const updateAttendanceAnalytics = (date: string, students: AttendanceStudent[]) => {
     const presentCount = students.filter(s => s.status === 'present').length;
     const absentCount = students.filter(s => s.status === 'absent').length;
     const lateCount = students.filter(s => s.status === 'late').length;
     const totalCount = students.length;
     
-    const analyticsData = {
+    const analyticsData: AttendanceAnalytics = {
       date,
       presentCount,
       absentCount,
@@ -206,7 +220,7 @@ const AttendanceTracker = () => {
   };
 
   // Generate status buttons for student
-  const renderStatusButtons = (student: Student) => {
+  const renderStatusButtons = (student: AttendanceStudent) => {
     return (
       <div className="flex gap-2">
         <Button
@@ -302,7 +316,7 @@ const AttendanceTracker = () => {
                       <TableCell className="font-medium">{student.name}</TableCell>
                       <TableCell>{student.rollNumber}</TableCell>
                       <TableCell>{student.department}</TableCell>
-                      <TableCell>{getStatusText(student.status || '')}</TableCell>
+                      <TableCell>{getStatusText(student.status)}</TableCell>
                       <TableCell className="text-right">
                         {renderStatusButtons(student)}
                       </TableCell>
