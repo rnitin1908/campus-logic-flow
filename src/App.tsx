@@ -19,22 +19,7 @@ import ParentPortal from '@/pages/Admissions/ParentPortal';
 // Add the import for our new Academics page
 import Academics from './pages/Academics';
  
-
-const RoleBasedRoute = ({ allowedRoles, children }: { allowedRoles: string[], children: React.ReactNode }) => {
-  const { user } = useAuth();
-
-  if (!user) {
-    // Redirect to login if not authenticated
-    return <Navigate to="/auth/login" />;
-  }
-
-  if (!allowedRoles.includes(user.role)) {
-    // Redirect to unauthorized page if role is not allowed
-    return <Navigate to="/unauthorized" />;
-  }
-
-  return <>{children}</>;
-};
+import RoleBasedRoute from '@/components/auth/RoleBasedRoute';
 
 function App() {
   return (
