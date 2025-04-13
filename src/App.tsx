@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { USER_ROLES } from '@/lib/services/supabase/utils';
 import { Layout } from '@/components/layout/Layout';
 import Dashboard from '@/pages/Dashboard';
@@ -15,15 +14,16 @@ import Index from '@/pages/Index';
 import AdminRoutes from '@/pages/admin/AdminRoutes';
 import AdminPortal from '@/pages/Admissions/AdminPortal';
 import ParentPortal from '@/pages/Admissions/ParentPortal';
+import { AuthProvider } from '@/contexts/AuthContext';
+import RoleBasedRoute from '@/components/auth/RoleBasedRoute';
 
 // Add the import for our pages
 import Academics from './pages/Academics';
 import Attendance from './pages/Attendance';
- 
-import RoleBasedRoute from '@/components/auth/RoleBasedRoute';
 
 function App() {
   return (
+    <AuthProvider>
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
@@ -61,7 +61,6 @@ function App() {
             </RoleBasedRoute>
           } />
 
-          {/* Add the new Academics route */}
           <Route path="/academics" element={
             <RoleBasedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN, USER_ROLES.TEACHER, USER_ROLES.STUDENT]}>
               <Layout>
@@ -70,7 +69,6 @@ function App() {
             </RoleBasedRoute>
           } />
 
-          {/* Add the new Attendance route */}
           <Route path="/attendance" element={
             <RoleBasedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN, USER_ROLES.TEACHER]}>
               <Layout>
@@ -98,6 +96,7 @@ function App() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+    </AuthProvider>
   );
 }
 

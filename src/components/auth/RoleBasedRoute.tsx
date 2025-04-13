@@ -17,8 +17,11 @@ const RoleBasedRoute = ({
   const { user, isAuthenticated, isLoading, hasRole } = useAuth();
 
   if (isLoading) {
-    // You could render a loading spinner here
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {
