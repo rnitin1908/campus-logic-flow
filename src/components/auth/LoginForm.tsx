@@ -1,145 +1,110 @@
-
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, LogIn, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import TestUserCreator from '@/components/auth/TestUserCreator';
+import TestUserCreator from './TestUserCreator';
+import { AlertCircle } from 'lucide-react';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showTestUsers, setShowTestUsers] = useState(false);
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  
   const { login } = useAuth();
 
-  const handleTestUserInput = (email: string, password: string) => {
-    setEmail(email);
-    setPassword(password);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
-      console.log("Attempting login with:", email);
+      console.log('Attempting login with:', email);
       await login(email, password);
-      
-      toast({
-        title: "Login successful",
-        description: "Welcome back to CampusCore.",
-      });
-      
-      // Redirect to dashboard after successful login
-      navigate('/dashboard');
+      // Login success is handled by auth context redirecting to dashboard
     } catch (error: any) {
       console.error('Login error:', error);
-      
-      // Get a more specific error message from the error object
-      let errorMessage = "Invalid email or password. Please try again.";
-      
-      if (typeof error === 'string') {
-        errorMessage = error;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      toast({
-        variant: "destructive",
-        title: "Login failed",
-        description: errorMessage,
-      });
+      setError(error.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTestUserCreated = (email: string, password: string) => {
+    setEmail(email);
+    setPassword(password);
+    // Keep the test users section open
   };
 
   return (
     <div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Email address</Label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-            <Input
-              id="email"
-              type="email"
-              placeholder="name@example.com"
-              className="pl-10"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
-        
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between items-center">
             <Label htmlFor="password">Password</Label>
-            <a href="/auth/reset-password" className="text-xs text-primary hover:underline">
-              Forgot password?
+            <a 
+              href="#" 
+              className="text-xs text-primary hover:underline"
+              onClick={(e) => e.preventDefault()}
+            >
+              Forgot Password?
             </a>
           </div>
-          <div className="relative">
-            <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-            <Input
-              id="password"
-              type="password"
-              className="pl-10"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-        
-        <div className="flex items-center space-x-2">
-          <Checkbox 
-            id="remember-me" 
-            checked={rememberMe}
-            onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
           />
-          <Label htmlFor="remember-me" className="text-sm">Remember me for 30 days</Label>
         </div>
         
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        {error && (
+          <div className="bg-destructive/15 p-3 rounded-md flex items-start gap-2 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 mt-0.5" />
+            <div>{error}</div>
+          </div>
+        )}
+        
+        <Button 
+          type="submit" 
+          className="w-full" 
+          disabled={isLoading}
+        >
           {isLoading ? (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-2">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-              Signing in...
+              Signing In...
             </span>
-          ) : (
-            <span className="flex items-center gap-1">
-              <LogIn className="h-4 w-4 mr-2" />
-              Sign in
-            </span>
-          )}
+          ) : "Sign In"}
         </Button>
       </form>
 
-      <div className="mt-6 pt-5 border-t">
-        <Button 
-          type="button" 
-          variant="outline" 
-          className="w-full"
-          onClick={() => setShowTestUsers(!showTestUsers)}
-        >
-          <Users className="h-4 w-4 mr-2" />
-          {showTestUsers ? 'Hide Test Users' : 'Need Test Users?'}
-        </Button>
-
-        {showTestUsers && (
-          <div className="mt-4">
-            <TestUserCreator onUsersCreated={handleTestUserInput} />
-          </div>
+      <div className="mt-6 pt-6 border-t">
+        {showTestUsers ? (
+          <TestUserCreator onUsersCreated={handleTestUserCreated} />
+        ) : (
+          <Button 
+            variant="outline"
+            type="button"
+            className="w-full text-amber-600 border-amber-300 hover:bg-amber-50 hover:text-amber-700"
+            onClick={() => setShowTestUsers(true)}
+          >
+            Need Test Users?
+          </Button>
         )}
       </div>
     </div>

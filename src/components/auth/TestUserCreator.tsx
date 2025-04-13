@@ -4,6 +4,7 @@ import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { supabaseService, mongodbService } from '@/lib/services';
+import { createTestUsers } from '@/utils/createTestUsers';
 
 type TestUserResult = {
   name: string;
@@ -34,31 +35,8 @@ const TestUserCreator = ({ onUsersCreated }: TestUserCreatorProps) => {
     try {
       console.log("Starting test user creation process...");
       
-      let results;
-      
-      // Try Supabase first if configured
-      if (isSupabaseConfigured) {
-        try {
-          console.log("Creating test users via Supabase...");
-          results = await supabaseService.createTestUsers();
-        } catch (supabaseError) {
-          console.error("Error creating Supabase test users:", supabaseError);
-          // Fall back to MongoDB if Supabase fails
-          if (isMongoDBConfigured) {
-            console.log("Falling back to MongoDB for test users...");
-            results = await mongodbService.createTestUsers();
-          } else {
-            throw supabaseError;
-          }
-        }
-      } 
-      // If Supabase is not configured, use MongoDB
-      else if (isMongoDBConfigured) {
-        console.log("Creating test users via MongoDB...");
-        results = await mongodbService.createTestUsers();
-      } else {
-        throw new Error('Neither Supabase nor MongoDB is properly configured');
-      }
+      // Directly use the standalone createTestUsers function which has more robust error handling
+      const results = await createTestUsers();
       
       console.log("Test user creation results:", results);
       setTestUsersResult(results);
@@ -74,8 +52,21 @@ const TestUserCreator = ({ onUsersCreated }: TestUserCreatorProps) => {
           description: `${readyToUseCount} out of ${results.length} users are ready to use.`,
         });
         
-        // Pre-fill form with test credentials for convenience
-        onUsersCreated("superadmin@campuscore.edu", "Password123!");
+        // Find any admin user to pre-fill form with
+        const adminUser = results.find(user => 
+          (user.role.includes('admin') || user.role.includes('super')) && 
+          (user.status === 'Created' || user.status === 'Exists')
+        );
+        
+        // If no admin user, use any available user
+        const userToUse = adminUser || results.find(user => 
+          user.status === 'Created' || user.status === 'Exists'
+        );
+        
+        if (userToUse) {
+          // Pre-fill form with test credentials for convenience
+          onUsersCreated(userToUse.email, userToUse.password || "Password123!");
+        }
       } else {
         toast({
           variant: "destructive",
@@ -129,20 +120,36 @@ const TestUserCreator = ({ onUsersCreated }: TestUserCreatorProps) => {
       
       {testUsersResult.length > 0 && (
         <div className="text-xs border rounded-md overflow-hidden">
-          <div className="bg-muted/50 p-2 font-medium border-b">Test User Status</div>
-          <div className="max-h-32 overflow-y-auto">
-            {testUsersResult.map((user, index) => (
-              <div key={index} className="px-2 py-1 border-b text-xs last:border-b-0 flex justify-between">
-                <span>{user.email}</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
-                  user.status === 'Created' ? 'bg-green-100 text-green-800' : 
-                  user.status === 'Exists' ? 'bg-blue-100 text-blue-800' : 
-                  'bg-red-100 text-red-800'
-                }`}>
-                  {user.status}
-                </span>
-              </div>
-            ))}
+          <div className="bg-muted/50 p-2 font-medium border-b">Test User Credentials</div>
+          <div className="max-h-48 overflow-y-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-muted/30">
+                <tr className="border-b">
+                  <th className="p-2 text-left">Role</th>
+                  <th className="p-2 text-left">Email</th>
+                  <th className="p-2 text-left">Password</th>
+                  <th className="p-2 text-left">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {testUsersResult.map((user, index) => (
+                  <tr key={index} className={index % 2 === 0 ? 'bg-muted/10' : ''}>
+                    <td className="p-1.5 border-b">{user.role}</td>
+                    <td className="p-1.5 border-b">{user.email}</td>
+                    <td className="p-1.5 border-b">Password123!</td>
+                    <td className="p-1.5 border-b">
+                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${
+                        user.status === 'Created' ? 'bg-green-100 text-green-800' : 
+                        user.status === 'Exists' ? 'bg-blue-100 text-blue-800' : 
+                        'bg-red-100 text-red-800'
+                      }`}>
+                        {user.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

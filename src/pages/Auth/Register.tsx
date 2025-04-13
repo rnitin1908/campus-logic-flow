@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/contexts/AuthContext';
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/select';
 import AuthHeader from '@/components/auth/AuthHeader';
 import AuthStatusAlert from '@/components/auth/AuthStatusAlert';
+import { AlertCircle } from 'lucide-react';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -29,7 +30,7 @@ const Register = () => {
   const { register, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isAuthenticated) {
       navigate('/dashboard');
     }
@@ -48,10 +49,10 @@ const Register = () => {
 
     try {
       await register(name, email, password, role);
-      navigate('/dashboard');
-    } catch (error) {
+      // The AuthContext will handle redirecting to the dashboard after successful registration
+    } catch (error: any) {
       console.error('Registration error:', error);
-      setError('Registration failed. Please try again.');
+      setError(error.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -65,7 +66,12 @@ const Register = () => {
           subtitle="Register to access the student management system" 
         />
         
-        <AuthStatusAlert error={error} />
+        {error && (
+          <div className="bg-destructive/15 p-3 rounded-md flex items-start gap-2 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 mt-0.5" />
+            <div>{error}</div>
+          </div>
+        )}
         
         <Card>
           <form onSubmit={handleSubmit}>
@@ -139,7 +145,12 @@ const Register = () => {
                 className="w-full" 
                 disabled={isLoading}
               >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Creating Account...
+                  </span>
+                ) : 'Create Account'}
               </Button>
               <div className="mt-4 text-center text-sm">
                 Already have an account?{' '}
