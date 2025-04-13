@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { supabaseService, mongodbService } from '@/lib/services';
 
 type TestUserResult = {
