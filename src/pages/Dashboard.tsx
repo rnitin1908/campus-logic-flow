@@ -4,6 +4,8 @@ import { Users, GraduationCap, BookOpen, ClipboardCheck } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { UpcomingEvents } from '@/components/dashboard/UpcomingEvents';
+import { TestUserCreator } from '@/components/dashboard/TestUserCreator';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Sample data
 const attendanceData = [
@@ -77,6 +79,18 @@ const Dashboard = () => {
           <RecentActivity />
         </div>
       </div>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Test Users</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground mb-4">
+            Create test users with different roles for testing purposes.
+          </p>
+          <TestUserCreator />
+        </CardContent>
+      </Card>
     </div>
   );
 };
