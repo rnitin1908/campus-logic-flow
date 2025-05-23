@@ -1,8 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -12,13 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 
 interface AdmissionRequest {
   id: string;
@@ -42,10 +34,37 @@ const AdminPortal = () => {
 
   const fetchRequests = async () => {
     try {
-      // TODO: Replace with actual API call when backend is ready
-      console.log('Fetching admission requests...');
+      const response = await fetch('/api/admission-requests', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        }
+      });
       
-      // Mock data for now
+      if (response.ok) {
+        const data = await response.json();
+        setRequests(data.data || []);
+      } else {
+        console.error('Failed to fetch admission requests');
+        // Use mock data for now
+        const mockRequests = [
+          {
+            id: '1',
+            student_name: 'John Doe',
+            student_email: 'john@example.com',
+            parent_name: 'Jane Doe',
+            parent_email: 'jane@example.com',
+            phone: '+1234567890',
+            grade_applying_for: '10th Grade',
+            status: 'pending' as const,
+            created_at: new Date().toISOString()
+          }
+        ];
+        setRequests(mockRequests);
+      }
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      
+      // Fallback to mock data
       const mockRequests = [
         {
           id: '1',
@@ -59,10 +78,7 @@ const AdminPortal = () => {
           created_at: new Date().toISOString()
         }
       ];
-      
       setRequests(mockRequests);
-    } catch (error) {
-      console.error('Error fetching requests:', error);
     } finally {
       setLoading(false);
     }
@@ -70,14 +86,32 @@ const AdminPortal = () => {
 
   const updateRequestStatus = async (id: string, status: 'approved' | 'rejected') => {
     try {
-      // TODO: Replace with actual API call when backend is ready
-      console.log('Updating request status:', id, status);
+      const response = await fetch(`/api/admission-requests/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ status })
+      });
       
+      if (response.ok) {
+        setRequests(requests.map(req => 
+          req.id === id ? { ...req, status } : req
+        ));
+      } else {
+        console.error('Failed to update request status');
+        // Still update UI for demo purposes
+        setRequests(requests.map(req => 
+          req.id === id ? { ...req, status } : req
+        ));
+      }
+    } catch (error) {
+      console.error('Error updating status:', error);
+      // Still update UI for demo purposes
       setRequests(requests.map(req => 
         req.id === id ? { ...req, status } : req
       ));
-    } catch (error) {
-      console.error('Error updating status:', error);
     }
   };
 

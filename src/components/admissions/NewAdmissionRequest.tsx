@@ -1,190 +1,245 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, XCircle } from 'lucide-react';
-
-interface AdmissionFormData {
-  student_name: string;
-  student_email: string;
-  parent_name?: string;
-  parent_email?: string;
-  phone?: string;
-  grade_applying_for: string;
-  previous_school?: string;
-  additional_notes?: string;
-}
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { mongodbService } from '@/lib/services';
 
 const NewAdmissionRequest = () => {
-  const [formData, setFormData] = useState<AdmissionFormData>({
+  const [formData, setFormData] = useState({
     student_name: '',
-    student_email: '',
+    date_of_birth: '',
+    gender: '',
+    address: '',
+    contact_number: '',
+    email: '',
     parent_name: '',
-    parent_email: '',
-    phone: '',
     grade_applying_for: '',
+    academic_year: new Date().getFullYear().toString(),
     previous_school: '',
-    additional_notes: ''
+    notes: ''
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<boolean>(false);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
-  
+
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.student_name || !formData.student_email) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
+    setLoading(true);
+    setMessage(null);
 
     try {
-      // TODO: Replace with actual API call when backend is ready
-      console.log('Creating admission request:', formData);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setSuccess(true);
-      // Reset form
-      setFormData({
-        student_name: '',
-        student_email: '',
-        parent_name: '',
-        parent_email: '',
-        phone: '',
-        grade_applying_for: '',
-        previous_school: '',
-        additional_notes: ''
+      // Create admission request via MongoDB API
+      const response = await fetch('/api/admission-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          ...formData,
+          status: 'pending'
+        })
       });
-    } catch (error: any) {
-      setError(error.message || 'Failed to submit admission request');
+
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Admission request submitted successfully!' });
+        // Reset form
+        setFormData({
+          student_name: '',
+          date_of_birth: '',
+          gender: '',
+          address: '',
+          contact_number: '',
+          email: '',
+          parent_name: '',
+          grade_applying_for: '',
+          academic_year: new Date().getFullYear().toString(),
+          previous_school: '',
+          notes: ''
+        });
+      } else {
+        throw new Error('Failed to submit request');
+      }
+    } catch (error) {
+      console.error('Error submitting admission request:', error);
+      setMessage({ type: 'error', text: 'Failed to submit admission request. Please try again.' });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <Card>
+    <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
         <CardTitle>New Admission Request</CardTitle>
-        <CardDescription>Submit a new admission request for a student.</CardDescription>
+        <CardDescription>Submit a new admission request for a student</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
-        {error && (
-          <Alert variant="destructive">
-            <XCircle className="h-4 w-4" />
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+      <CardContent>
+        {message && (
+          <div className={`mb-4 p-3 rounded ${
+            message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+          }`}>
+            {message.text}
+          </div>
         )}
-        {success && (
-          <Alert>
-            <CheckCircle className="h-4 w-4" />
-            <AlertDescription>Admission request submitted successfully!</AlertDescription>
-          </Alert>
-        )}
-        <div className="grid gap-2">
-          <Label htmlFor="student_name">Student Name</Label>
-          <Input
-            id="student_name"
-            name="student_name"
-            placeholder="Enter student name"
-            value={formData.student_name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="student_email">Student Email</Label>
-          <Input
-            id="student_email"
-            name="student_email"
-            type="email"
-            placeholder="Enter student email"
-            value={formData.student_email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="parent_name">Parent Name (Optional)</Label>
-          <Input
-            id="parent_name"
-            name="parent_name"
-            placeholder="Enter parent name"
-            value={formData.parent_name || ''}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="parent_email">Parent Email (Optional)</Label>
-          <Input
-            id="parent_email"
-            name="parent_email"
-            type="email"
-            placeholder="Enter parent email"
-            value={formData.parent_email || ''}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="phone">Phone (Optional)</Label>
-          <Input
-            id="phone"
-            name="phone"
-            type="tel"
-            placeholder="Enter phone number"
-            value={formData.phone || ''}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="grade_applying_for">Grade Applying For</Label>
-          <Input
-            id="grade_applying_for"
-            name="grade_applying_for"
-            placeholder="Enter grade applying for"
-            value={formData.grade_applying_for}
-            onChange={handleChange}
-            required
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="previous_school">Previous School (Optional)</Label>
-          <Input
-            id="previous_school"
-            name="previous_school"
-            placeholder="Enter previous school"
-            value={formData.previous_school || ''}
-            onChange={handleChange}
-          />
-        </div>
-        <div className="grid gap-2">
-          <Label htmlFor="additional_notes">Additional Notes (Optional)</Label>
-          <Input
-            id="additional_notes"
-            name="additional_notes"
-            placeholder="Enter additional notes"
-            value={formData.additional_notes || ''}
-            onChange={handleChange}
-          />
-        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="student_name">Student Name *</Label>
+              <Input
+                id="student_name"
+                name="student_name"
+                value={formData.student_name}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="date_of_birth">Date of Birth</Label>
+              <Input
+                id="date_of_birth"
+                name="date_of_birth"
+                type="date"
+                value={formData.date_of_birth}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="gender">Gender</Label>
+              <Select onValueChange={(value) => handleSelectChange('gender', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="grade_applying_for">Grade Applying For *</Label>
+              <Input
+                id="grade_applying_for"
+                name="grade_applying_for"
+                value={formData.grade_applying_for}
+                onChange={handleInputChange}
+                placeholder="e.g., Grade 1, Grade 10"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Textarea
+              id="address"
+              name="address"
+              value={formData.address}
+              onChange={handleInputChange}
+              placeholder="Enter full address"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="contact_number">Contact Number</Label>
+              <Input
+                id="contact_number"
+                name="contact_number"
+                value={formData.contact_number}
+                onChange={handleInputChange}
+                placeholder="+1234567890"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                placeholder="student@example.com"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="parent_name">Parent/Guardian Name</Label>
+              <Input
+                id="parent_name"
+                name="parent_name"
+                value={formData.parent_name}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="academic_year">Academic Year</Label>
+              <Input
+                id="academic_year"
+                name="academic_year"
+                value={formData.academic_year}
+                onChange={handleInputChange}
+                placeholder="2024-2025"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="previous_school">Previous School</Label>
+            <Input
+              id="previous_school"
+              name="previous_school"
+              value={formData.previous_school}
+              onChange={handleInputChange}
+              placeholder="Name of previous school (if any)"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="notes">Additional Notes</Label>
+            <Textarea
+              id="notes"
+              name="notes"
+              value={formData.notes}
+              onChange={handleInputChange}
+              placeholder="Any additional information or special requirements"
+            />
+          </div>
+
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Submitting...' : 'Submit Admission Request'}
+          </Button>
+        </form>
       </CardContent>
-      <CardFooter>
-        <Button disabled={isLoading} onClick={handleSubmit}>
-          {isLoading ? 'Submitting...' : 'Submit Request'}
-        </Button>
-      </CardFooter>
     </Card>
   );
 };
