@@ -1,3 +1,4 @@
+
 import { ROLES, USER_ROLES } from '@/lib/roles';
 import { ClassFormData } from '@/types/class';
 import { SchoolFormData } from '@/types/school';
@@ -9,7 +10,7 @@ class MongodbService {
   private authToken: string | null;
 
   constructor() {
-    this.baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
     this.authToken = null;
   }
 
