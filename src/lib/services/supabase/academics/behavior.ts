@@ -6,11 +6,13 @@ export interface BehaviorRecord {
   academic_year?: string;
   incident_date?: string;
   behavior_type?: 'positive' | 'negative' | 'neutral';
+  category?: string;
   description?: string;
   action_taken?: string;
   severity?: 'minor' | 'moderate' | 'major';
   reported_by_id?: string;
   reported_by_name?: string;
+  reporter?: string;
   created_at?: string;
   updated_at?: string;
   resolved?: boolean;
@@ -29,11 +31,13 @@ export const getStudentBehaviorRecords = async (studentId: string, termId?: stri
       academic_year: '2023-2024',
       incident_date: new Date().toISOString(),
       behavior_type: 'positive',
+      category: 'helpfulness',
       description: 'Helped another student with their assignment',
       action_taken: 'Positive reinforcement, recognition in class',
       severity: 'minor',
       reported_by_id: 'teacher1',
       reported_by_name: 'John Smith',
+      reporter: 'John Smith',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       resolved: true,
@@ -47,11 +51,13 @@ export const getStudentBehaviorRecords = async (studentId: string, termId?: stri
       academic_year: '2023-2024',
       incident_date: new Date().toISOString(),
       behavior_type: 'negative',
+      category: 'disruption',
       description: 'Disrupted class by talking',
       action_taken: 'Verbal warning',
       severity: 'minor',
       reported_by_id: 'teacher2',
       reported_by_name: 'Jane Doe',
+      reporter: 'Jane Doe',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       resolved: true,

@@ -3,13 +3,13 @@ import { mongodbService } from '@/lib/services';
 
 export const createSuperAdmin = async (email: string, password: string, name: string) => {
   try {
-    // Check if super admin already exists
-    const existingUsers = await mongodbService.getUsers();
-    const existingUser = existingUsers.find(user => user.email === email);
-    
-    if (existingUser) {
+    // Check if super admin already exists by trying to login
+    try {
+      await mongodbService.login(email, password);
       console.log('Super admin already exists');
       return { success: false, message: 'Super admin already exists' };
+    } catch (error) {
+      // User doesn't exist, we can create them
     }
 
     // Create super admin user
@@ -20,7 +20,7 @@ export const createSuperAdmin = async (email: string, password: string, name: st
       role: 'super_admin'
     };
 
-    const result = await mongodbService.createUser(userData);
+    const result = await mongodbService.register(userData);
     
     if (result) {
       console.log('Super admin created successfully');

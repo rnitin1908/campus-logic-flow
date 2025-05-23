@@ -1,52 +1,118 @@
-import { useState } from 'react';
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createSuperAdmin } from '@/utils/createSuperAdmin';
 
-export default function SetupAdmin() {
-  const [result, setResult] = useState<string>('');
-  const [loading, setLoading] = useState(false);
+const SetupAdmin = () => {
+  const [email, setEmail] = useState('admin@school.edu');
+  const [password, setPassword] = useState('admin123');
+  const [name, setName] = useState('Super Admin');
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const navigate = useNavigate();
 
-  const handleCreateAdmin = async () => {
-    setLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage(null);
+
     try {
-      const response = await createSuperAdmin();
-      setResult(JSON.stringify(response, null, 2));
+      const result = await createSuperAdmin(email, password, name);
+      
+      if (result.success) {
+        setMessage({ type: 'success', text: result.message });
+        setTimeout(() => {
+          navigate('/auth/login');
+        }, 2000);
+      } else {
+        setMessage({ type: 'error', text: result.message });
+      }
     } catch (error) {
-      setResult(`Error: ${error}`);
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : 'Failed to create super admin' 
+      });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-xl">
-      <h1 className="text-2xl font-bold mb-4">Setup Superadmin Account</h1>
-      <div className="p-4 border rounded mb-4 bg-yellow-50">
-        <p className="text-amber-800 mb-2">
-          <strong>Warning:</strong> This page will create a superadmin account with the following credentials:
-        </p>
-        <ul className="list-disc pl-5 text-amber-700">
-          <li><strong>Email:</strong> superadmin@campuscore.edu</li>
-          <li><strong>Password:</strong> Password123!</li>
-          <li><strong>Role:</strong> super_admin</li>
-        </ul>
-      </div>
-      
-      <button 
-        onClick={handleCreateAdmin}
-        disabled={loading}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-      >
-        {loading ? 'Creating...' : 'Create Superadmin Account'}
-      </button>
-      
-      {result && (
-        <div className="mt-4 p-4 border rounded bg-gray-50">
-          <h2 className="text-lg font-semibold mb-2">Result:</h2>
-          <pre className="whitespace-pre-wrap bg-gray-100 p-2 rounded overflow-auto max-h-[400px]">
-            {result}
-          </pre>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Setup Super Admin
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            Create the initial super administrator account
+          </p>
         </div>
-      )}
+
+        {message && (
+          <Alert className={message.type === 'error' ? 'border-red-200 bg-red-50' : 'border-green-200 bg-green-50'}>
+            <AlertDescription className={message.type === 'error' ? 'text-red-800' : 'text-green-800'}>
+              {message.text}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <Card>
+          <form onSubmit={handleSubmit}>
+            <CardHeader>
+              <CardTitle>Super Admin Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? 'Creating...' : 'Create Super Admin'}
+              </Button>
+            </CardFooter>
+          </form>
+        </Card>
+      </div>
     </div>
   );
-}
+};
+
+export default SetupAdmin;

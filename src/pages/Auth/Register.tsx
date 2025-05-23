@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { ROLES } from '@/contexts/AuthContext';
+import { USER_ROLES } from '@/lib/constants/roles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -23,7 +23,7 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState(ROLES.STUDENT);
+  const [role, setRole] = useState(USER_ROLES.STUDENT);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -48,7 +48,7 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      await register(name, email, password, role);
+      await register({ name, email, password, role });
       // The AuthContext will handle redirecting to the dashboard after successful registration
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -131,10 +131,10 @@ const Register = () => {
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={ROLES.STUDENT}>Student</SelectItem>
-                    <SelectItem value={ROLES.PARENT}>Parent</SelectItem>
-                    <SelectItem value={ROLES.TEACHER}>Teacher</SelectItem>
-                    <SelectItem value={ROLES.SCHOOL_ADMIN}>School Admin</SelectItem>
+                    <SelectItem value={USER_ROLES.STUDENT}>Student</SelectItem>
+                    <SelectItem value={USER_ROLES.PARENT}>Parent</SelectItem>
+                    <SelectItem value={USER_ROLES.TEACHER}>Teacher</SelectItem>
+                    <SelectItem value={USER_ROLES.SCHOOL_ADMIN}>School Admin</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
