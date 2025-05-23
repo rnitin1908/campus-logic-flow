@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BehaviorRecord as BehaviorRecordType } from '@/lib/services/supabase/academics/behavior';
+import { BehaviorRecord as BehaviorRecordType } from '@/types/student';
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface BehaviorRecordProps {
@@ -81,7 +81,7 @@ const BehaviorRecord: React.FC<BehaviorRecordProps> = ({
                         <h4 className="font-medium">{record.category}</h4>
                         <p className="text-sm text-muted-foreground">
                           {format(new Date(record.incident_date), 'PPP')}
-                          {record.reporter ? ` • Reported by ${record.reporter.name}` : ''}
+                          {record.reporter?.name ? ` • Reported by ${record.reporter.name}` : ''}
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">

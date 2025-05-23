@@ -34,15 +34,34 @@ const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
   const [newStudent, setNewStudent] = useState<StudentFormData>({
-    name: '',
+    first_name: '',
+    last_name: '',
     email: '',
-    rollNumber: '',
-    department: '',
-    dateOfBirth: '',
-    gender: '',
-    contactNumber: '',
+    phone: '',
+    date_of_birth: '',
+    gender: 'male',
     address: '',
-    status: 'active'
+    city: '',
+    state: '',
+    country: '',
+    pincode: '',
+    admission_number: '',
+    admission_date: '',
+    school_id: '',
+    class_id: '',
+    section: '',
+    academic_year: '',
+    status: 'active',
+    // Frontend compatibility
+    name: '',
+    rollNumber: '',
+    roll_number: '',
+    department: '',
+    contactNumber: '',
+    contact_number: '',
+    dateOfBirth: '',
+    admissionDate: '',
+    academicYear: '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +75,7 @@ const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
 
   const handleAddStudent = async () => {
     // Basic validation
-    if (!newStudent.name || !newStudent.email || !newStudent.rollNumber || !newStudent.department) {
+    if (!newStudent.first_name || !newStudent.last_name || !newStudent.email || !newStudent.rollNumber || !newStudent.department) {
       toast({
         title: "Validation Error",
         description: "Please fill in all required fields",
@@ -66,7 +85,18 @@ const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
     }
 
     try {
-      await mongodbService.createStudent(newStudent);
+      // Prepare data with both formats for compatibility
+      const studentData = {
+        ...newStudent,
+        name: `${newStudent.first_name} ${newStudent.last_name}`.trim(),
+        roll_number: newStudent.rollNumber,
+        contact_number: newStudent.contactNumber,
+        date_of_birth: newStudent.dateOfBirth,
+        admission_date: newStudent.admissionDate,
+        academic_year: newStudent.academicYear,
+      };
+
+      await mongodbService.createStudent(studentData);
       setIsAddStudentOpen(false);
       resetForm();
       toast({
@@ -86,15 +116,33 @@ const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
 
   const resetForm = () => {
     setNewStudent({
-      name: '',
+      first_name: '',
+      last_name: '',
       email: '',
-      rollNumber: '',
-      department: '',
-      dateOfBirth: '',
-      gender: '',
-      contactNumber: '',
+      phone: '',
+      date_of_birth: '',
+      gender: 'male',
       address: '',
-      status: 'active'
+      city: '',
+      state: '',
+      country: '',
+      pincode: '',
+      admission_number: '',
+      admission_date: '',
+      school_id: '',
+      class_id: '',
+      section: '',
+      academic_year: '',
+      status: 'active',
+      name: '',
+      rollNumber: '',
+      roll_number: '',
+      department: '',
+      contactNumber: '',
+      contact_number: '',
+      dateOfBirth: '',
+      admissionDate: '',
+      academicYear: '',
     });
     setActiveTab('basic');
   };
@@ -126,14 +174,25 @@ const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
           <TabsContent value="basic" className="space-y-4 pt-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="name">
-                  Full Name <span className="text-destructive">*</span>
+                <Label htmlFor="first_name">
+                  First Name <span className="text-destructive">*</span>
                 </Label>
                 <Input 
-                  id="name" 
-                  value={newStudent.name}
+                  id="first_name" 
+                  value={newStudent.first_name}
                   onChange={handleInputChange}
-                  placeholder="John Doe"
+                  placeholder="John"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="last_name">
+                  Last Name <span className="text-destructive">*</span>
+                </Label>
+                <Input 
+                  id="last_name" 
+                  value={newStudent.last_name}
+                  onChange={handleInputChange}
+                  placeholder="Doe"
                 />
               </div>
               <div className="space-y-2">
@@ -161,7 +220,7 @@ const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
                 <Label htmlFor="gender">Gender</Label>
                 <Select 
                   value={newStudent.gender} 
-                  onValueChange={(value) => handleSelectChange('gender', value)}
+                  onValueChange={(value: 'male' | 'female' | 'other') => handleSelectChange('gender', value)}
                 >
                   <SelectTrigger id="gender">
                     <SelectValue placeholder="Select gender" />
@@ -259,7 +318,7 @@ const AddStudentForm = ({ onStudentAdded }: AddStudentFormProps) => {
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="graduated">Graduated</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

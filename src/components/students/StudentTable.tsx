@@ -74,10 +74,11 @@ const StudentTable = ({
 
   // Filter students based on search value and department filter
   const filteredStudents = students.filter(student => {
+    const rollNumber = student.roll_number || student.rollNumber || '';
     const matchesSearch = 
       student.name.toLowerCase().includes(searchValue.toLowerCase()) ||
       student.email.toLowerCase().includes(searchValue.toLowerCase()) ||
-      student.rollNumber.toLowerCase().includes(searchValue.toLowerCase()) ||
+      rollNumber.toLowerCase().includes(searchValue.toLowerCase()) ||
       student.department.toLowerCase().includes(searchValue.toLowerCase());
     
     const matchesDepartment = departmentFilter ? 
@@ -153,7 +154,7 @@ const StudentTable = ({
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{student.rollNumber}</TableCell>
+                <TableCell>{student.roll_number || student.rollNumber}</TableCell>
                 <TableCell>{student.department}</TableCell>
                 <TableCell>
                   <Badge

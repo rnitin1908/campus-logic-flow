@@ -29,10 +29,10 @@ const StudentActions = ({ onStudentAdded, students, onImportClick }: StudentActi
         const values = [
           `"${student.name}"`,
           `"${student.email}"`,
-          `"${student.rollNumber}"`,
+          `"${student.roll_number || student.rollNumber}"`,
           `"${student.department}"`,
           `"${student.status}"`,
-          `"${student.contactNumber || ''}"`,
+          `"${student.contact_number || student.contactNumber || ''}"`,
           `"${student.address || ''}"`
         ];
         csvRows.push(values.join(','));

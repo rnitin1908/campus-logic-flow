@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/components/ui/use-toast";
 import { ArrowLeft, Edit, Save, Trash, Upload, X } from 'lucide-react';
@@ -29,7 +30,7 @@ const StudentProfile = ({ student, onBack, onUpdate }: StudentProfileProps) => {
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('personal');
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handleStatusChange = async (newStatus: 'active' | 'inactive' | 'graduated' | 'transferred' | 'suspended') => {
     try {
       await mongodbService.updateStudent(student._id, { 
         ...student, 
@@ -111,16 +112,16 @@ const StudentProfile = ({ student, onBack, onUpdate }: StudentProfileProps) => {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Roll Number:</span>
-                <span className="font-medium">{student.rollNumber}</span>
+                <span className="font-medium">{student.roll_number || student.rollNumber}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Department:</span>
                 <span className="font-medium">{student.department}</span>
               </div>
-              {student.dateOfBirth && (
+              {(student.date_of_birth || student.dateOfBirth) && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Date of Birth:</span>
-                  <span className="font-medium">{new Date(student.dateOfBirth).toLocaleDateString()}</span>
+                  <span className="font-medium">{new Date(student.date_of_birth || student.dateOfBirth).toLocaleDateString()}</span>
                 </div>
               )}
               {student.gender && (
@@ -129,10 +130,10 @@ const StudentProfile = ({ student, onBack, onUpdate }: StudentProfileProps) => {
                   <span className="font-medium">{student.gender}</span>
                 </div>
               )}
-              {student.contactNumber && (
+              {(student.contact_number || student.contactNumber) && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Contact:</span>
-                  <span className="font-medium">{student.contactNumber}</span>
+                  <span className="font-medium">{student.contact_number || student.contactNumber}</span>
                 </div>
               )}
             </div>
@@ -169,11 +170,11 @@ const StudentProfile = ({ student, onBack, onUpdate }: StudentProfileProps) => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Contact Number</p>
-                  <p>{student.contactNumber || 'Not provided'}</p>
+                  <p>{student.contact_number || student.contactNumber || 'Not provided'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Date of Birth</p>
-                  <p>{student.dateOfBirth ? new Date(student.dateOfBirth).toLocaleDateString() : 'Not provided'}</p>
+                  <p>{(student.date_of_birth || student.dateOfBirth) ? new Date(student.date_of_birth || student.dateOfBirth).toLocaleDateString() : 'Not provided'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Gender</p>
@@ -213,15 +214,15 @@ const StudentProfile = ({ student, onBack, onUpdate }: StudentProfileProps) => {
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Admission Date</p>
-                  <p>{student.admissionDate ? new Date(student.admissionDate).toLocaleDateString() : 'Not provided'}</p>
+                  <p>{(student.admission_date || student.admissionDate) ? new Date(student.admission_date || student.admissionDate).toLocaleDateString() : 'Not provided'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Academic Year</p>
-                  <p>{student.academicYear || 'Not provided'}</p>
+                  <p>{student.academic_year || student.academicYear || 'Not provided'}</p>
                 </div>
                 <div className="space-y-1 md:col-span-2">
                   <p className="text-sm text-muted-foreground">Previous School</p>
-                  <p>{student.previousSchool || 'Not provided'}</p>
+                  <p>{student.previous_school || student.previousSchool || 'Not provided'}</p>
                 </div>
               </div>
             </TabsContent>
@@ -324,13 +325,13 @@ const DropdownStatusMenu = ({
   onStatusChange 
 }: { 
   currentStatus: string; 
-  onStatusChange: (status: string) => void 
+  onStatusChange: (status: 'active' | 'inactive' | 'graduated' | 'transferred' | 'suspended') => void 
 }) => {
   const statusOptions = [
-    { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'graduated', label: 'Graduated' },
-    { value: 'suspended', label: 'Suspended' }
+    { value: 'active' as const, label: 'Active' },
+    { value: 'inactive' as const, label: 'Inactive' },
+    { value: 'graduated' as const, label: 'Graduated' },
+    { value: 'suspended' as const, label: 'Suspended' }
   ];
 
   return (

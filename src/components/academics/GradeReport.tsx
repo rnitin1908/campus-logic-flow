@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Grade } from '@/lib/services/supabase/academics/grades';
+import { Grade } from '@/types/student';
 
 interface GradeReportProps {
   grades: Grade[];
