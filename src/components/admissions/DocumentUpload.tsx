@@ -5,7 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { uploadAdmissionDocument } from '@/lib/services/supabase/admissions';
+import { apiClient } from '@/lib/services/api';
+
+// Replace Supabase function with API call
+const uploadAdmissionDocument = async (admissionId: string, file: File, type: string) => {
+  // Create a FormData object to send the file
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('type', type);
+  
+  const response = await apiClient.post(`/admissions/${admissionId}/documents`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return response.data;
+};
 import { Loader2, Upload, FileText, Check, AlertCircle } from 'lucide-react';
 
 interface DocumentUploadProps {

@@ -423,9 +423,23 @@ export const supabaseService = {
                 
               if (profileError) {
                 console.warn(`Warning: Could not create profile for ${user.email}:`, profileError);
+                results.push({
+                  ...user,
+                  status: 'Error',
+                  password: defaultPassword,
+                  message: `Could not create profile: ${profileError.message || 'Unknown profile error'}`
+                });
+                continue;
               }
-            } catch (profileError) {
+            } catch (profileError: any) {
               console.warn(`Warning: Error creating profile for ${user.email}:`, profileError);
+              results.push({
+                ...user,
+                status: 'Error',
+                password: defaultPassword,
+                message: `Error creating profile: ${profileError.message || 'Unknown profile error'}`
+              });
+              continue;
             }
             
             results.push({ 

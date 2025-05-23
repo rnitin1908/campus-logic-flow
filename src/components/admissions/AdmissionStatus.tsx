@@ -1,7 +1,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAdmissionRequests } from '@/lib/services/supabase/admissions';
+import { apiClient } from '@/lib/services/api';
+
+// Replace Supabase function with API call
+const getAdmissionRequests = async (filters?: any) => {
+  const response = await apiClient.get('/admissions', { params: filters });
+  return response.data;
+};
 import { AdmissionRequest, AdmissionStatus as Status } from '@/types/admission';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

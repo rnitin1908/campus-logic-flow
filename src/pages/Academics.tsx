@@ -4,15 +4,40 @@ import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
-  getAcademicTerms, 
-  getStudentGrades,
-  getStudentBehaviorRecords, 
-  getStudentPerformanceForTerm, 
-  generatePerformanceInsights,
-  updateOrCreatePerformanceMetric 
-} from '@/lib/services/supabase/academics';
-import { supabaseService } from '@/lib/services';
+// Import MongoDB services
+import { mongodbService } from '@/lib/services';
+import { apiClient } from '@/lib/services/api';
+
+// These functions will need to be implemented with MongoDB API calls
+const getAcademicTerms = async () => {
+  const response = await apiClient.get('/academic-terms');
+  return response.data;
+};
+
+const getStudentGrades = async (studentId: string, termId: string) => {
+  const response = await apiClient.get(`/grades?studentId=${studentId}&termId=${termId}`);
+  return response.data;
+};
+
+const getStudentBehaviorRecords = async (studentId: string, termId: string) => {
+  const response = await apiClient.get(`/behavior-records?studentId=${studentId}&termId=${termId}`);
+  return response.data;
+};
+
+const getStudentPerformanceForTerm = async (studentId: string, termId: string) => {
+  const response = await apiClient.get(`/performance?studentId=${studentId}&termId=${termId}`);
+  return response.data;
+};
+
+const generatePerformanceInsights = async (studentId: string, termId: string) => {
+  const response = await apiClient.get(`/insights?studentId=${studentId}&termId=${termId}`);
+  return response.data;
+};
+
+const updateOrCreatePerformanceMetric = async (data: any) => {
+  const response = await apiClient.post('/performance', data);
+  return response.data;
+};
 import AcademicTermSelector from '@/components/academics/AcademicTermSelector';
 import GradeReport from '@/components/academics/GradeReport';
 import BehaviorRecord from '@/components/academics/BehaviorRecord';

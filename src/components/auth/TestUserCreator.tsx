@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { supabaseService, mongodbService } from '@/lib/services';
+import { mongodbService } from '@/lib/services';
 import { createTestUsers } from '@/utils/createTestUsers';
 
 type TestUserResult = {
@@ -24,7 +24,6 @@ const TestUserCreator = ({ onUsersCreated }: TestUserCreatorProps) => {
   const [testUsersResult, setTestUsersResult] = useState<TestUserResult[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const isSupabaseConfigured = supabaseService.isSupabaseConfigured();
   const isMongoDBConfigured = mongodbService.isMongoDBConfigured();
 
   const handleTestUserCreation = async () => {

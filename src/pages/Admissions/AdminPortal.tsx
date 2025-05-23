@@ -1,6 +1,17 @@
 
 import React, { useEffect, useState } from 'react';
-import { getAdmissionRequests, updateAdmissionStatus } from '@/lib/services/supabase/admissions';
+import { apiClient } from '@/lib/services/api';
+
+// Replace Supabase functions with API calls
+const getAdmissionRequests = async (filters?: any) => {
+  const response = await apiClient.get('/admissions', { params: filters });
+  return response.data;
+};
+
+const updateAdmissionStatus = async (requestId: string, status: string, notes?: string) => {
+  const response = await apiClient.put(`/admissions/${requestId}`, { status, notes });
+  return response.data;
+};
 import { AdmissionRequest, AdmissionStatus } from '@/types/admission';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client'; // Removed during MongoDB migration
 import { 
   Clock, CheckCircle, XCircle, Eye, Search, Loader2,
   Filter, FileText, MoreHorizontal, AlertCircle, UserPlus

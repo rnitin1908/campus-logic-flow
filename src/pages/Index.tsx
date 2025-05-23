@@ -19,7 +19,7 @@ const Index = () => {
   return isAuthenticated ? (
     <Navigate to="/dashboard" replace />
   ) : (
-    <Navigate to="/auth/login" replace />
+    <Navigate to="/dashboard" replace />
   );
 };
 

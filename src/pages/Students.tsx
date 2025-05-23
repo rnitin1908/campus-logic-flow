@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { supabaseService } from '@/lib/services';
+import { mongodbService } from '@/lib/services';
 import StudentSearch from '@/components/students/StudentSearch';
 import StudentActions from '@/components/students/StudentActions';
 import StudentTable from '@/components/students/StudentTable';
@@ -29,8 +29,12 @@ const Students = () => {
   const fetchStudents = async () => {
     try {
       setIsLoading(true);
-      const data = await supabaseService.getStudents();
-      setStudents(data);
+      const response = await mongodbService.getStudents({
+        limit: 100, // Adjust as needed
+        sortBy: 'created_at',
+        sortOrder: 'desc'
+      });
+      setStudents(response.data);
       setError(null);
     } catch (err) {
       setError('Failed to fetch students');

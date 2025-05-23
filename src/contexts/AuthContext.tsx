@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabaseService, USER_ROLES, mongodbService } from '@/lib/services';
 import { useToast } from '@/components/ui/use-toast';
+// Import supabase client for backward compatibility during migration
 import { supabase } from '@/integrations/supabase/client';
 
 interface User {
@@ -56,10 +57,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         description: "Neither Supabase nor MongoDB API is configured. Authentication will not work.",
         variant: "destructive",
       });
-    } else if (!isSupabaseReady) {
-      console.log("Supabase is not configured, falling back to MongoDB");
-    } else {
-      console.log("Setting up Supabase auth state listener");
+      setIsLoading(false);
+      return;
+    }
+    
+    // Prioritize MongoDB during migration
+    if (isMongoDBReady) {
+      console.log("Using MongoDB for authentication");
+      // Check for stored user data
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const userData = JSON.parse(storedUser);
+          console.log("Using stored user data with MongoDB:", userData);
+          setUser(userData);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error("Error parsing stored user data:", error);
+        }
+      }
+      setIsLoading(false);
+      return;
+    }
+    
+    // Fall back to Supabase if MongoDB is not configured
+    if (isSupabaseReady) {
+      console.log("Falling back to Supabase auth state listener");
       
       // Set up auth state listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -125,9 +148,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       };
     }
     
-    // If Supabase is not available, just check for stored user
     setIsLoading(false);
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     setIsAuthenticated(!!user);
@@ -156,8 +178,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Fall back to MongoDB service
       console.log("Using MongoDB for authentication");
-      const userData = await mongodbService.login(email, password);
-      console.log("MongoDB login successful, user data:", userData);
+      const response = await mongodbService.login(email, password);
+      console.log("MongoDB login successful, response:", response);
+      
+      // Extract user data from MongoDB response and format it to match User type
+      const userData = {
+        id: response.user?.id || response.user?._id || '',
+        name: response.user?.name || email.split('@')[0],
+        email: response.user?.email || email,
+        role: response.user?.role || USER_ROLES.STUDENT,
+        schoolId: response.user?.school_id || null,
+        schoolName: response.user?.school_name || null,
+        token: response.token || ''
+      };
+      
+      console.log("Formatted user data for state:", userData);
       setUser(userData);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(userData));

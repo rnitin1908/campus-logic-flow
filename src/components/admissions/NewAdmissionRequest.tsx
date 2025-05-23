@@ -11,8 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-import { createAdmissionRequest } from '@/lib/services/supabase/admissions';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/services/api';
+
+// Replace Supabase function with API call
+const createAdmissionRequest = async (data: any) => {
+  const response = await apiClient.post('/admissions', data);
+  return response.data;
+};
+// import { supabase } from '@/integrations/supabase/client'; // Removed during MongoDB migration
 import DocumentUpload from './DocumentUpload';
 import { Loader2 } from 'lucide-react';
 import { AdmissionRequestFormData } from '@/types/admission';

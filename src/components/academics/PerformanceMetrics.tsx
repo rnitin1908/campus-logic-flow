@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { AlertCircle, Award, Brain, Calendar } from "lucide-react";
-import { PerformanceMetric } from '@/lib/services/supabase/academics/performance';
+import { PerformanceMetric } from '@/lib/services/mongodb/academics/performance';
 
 interface PerformanceMetricsProps {
   metric: PerformanceMetric;
@@ -51,35 +51,33 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="space-y-6">
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium flex items-center gap-1">
-                  <Award size={16} /> Academic Score
-                </span>
-                <span className={`text-sm font-medium ${getColorForScore(metric.academic_score)}`}>
-                  {metric.academic_score?.toFixed(1) || 'N/A'}
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Academic Score</span>
+                <span className={`text-sm font-medium ${getColorForScore(metric.test_scores)}`}>
+                  {metric.test_scores || 'N/A'}
                 </span>
               </div>
-              <Progress 
-                value={metric.academic_score || 0} 
-                max={100} 
-                className={`h-2 ${getProgressColor(metric.academic_score)}`} 
-              />
+              <div className="h-2 rounded-full bg-gray-200 mb-4">
+                <div 
+                  className={`h-2 rounded-full ${getProgressColor(metric.test_scores)}`}
+                  style={{ width: `${metric.test_scores || 0}%` }}
+                />
+              </div>
             </div>
             
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium flex items-center gap-1">
-                  <Calendar size={16} /> Attendance
-                </span>
-                <span className={`text-sm font-medium ${getColorForScore(metric.attendance_percentage)}`}>
-                  {metric.attendance_percentage?.toFixed(1)}%
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Attendance</span>
+                <span className={`text-sm font-medium ${getColorForScore(metric.attendance_rate)}`}>
+                  {metric.attendance_rate || 'N/A'}
                 </span>
               </div>
-              <Progress 
-                value={metric.attendance_percentage || 0}
-                max={100}
-                className={`h-2 ${getProgressColor(metric.attendance_percentage)}`}
-              />
+              <div className="h-2 rounded-full bg-gray-200 mb-4">
+                <div 
+                  className={`h-2 rounded-full ${getProgressColor(metric.attendance_rate)}`}
+                  style={{ width: `${metric.attendance_rate || 0}%` }}
+                />
+              </div>
             </div>
             
             <div>
@@ -99,26 +97,25 @@ const PerformanceMetrics: React.FC<PerformanceMetricsProps> = ({
             </div>
             
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium flex items-center gap-1">
-                  <Brain size={16} /> Overall Performance
-                </span>
-                <span className={`text-sm font-medium ${getColorForScore(metric.overall_performance)}`}>
-                  {metric.overall_performance?.toFixed(1) || 'N/A'}
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Overall Performance</span>
+                <span className={`text-sm font-medium ${getColorForScore(metric.overall_grade)}`}>
+                  {metric.overall_grade || 'N/A'}
                 </span>
               </div>
-              <Progress 
-                value={metric.overall_performance || 0}
-                max={100}
-                className={`h-2 ${getProgressColor(metric.overall_performance)}`}
-              />
+              <div className="h-2 rounded-full bg-gray-200 mb-4">
+                <div 
+                  className={`h-2 rounded-full ${getProgressColor(metric.overall_grade)}`}
+                  style={{ width: `${metric.overall_grade || 0}%` }}
+                />
+              </div>
             </div>
           </div>
           
           <div className="border rounded-lg p-3 bg-slate-50 dark:bg-slate-900">
-            <h4 className="text-sm font-medium mb-2">AI-Generated Insights</h4>
+            <h4 className="text-sm font-medium mb-2">Performance Notes</h4>
             <p className="text-sm text-muted-foreground">
-              {metric.insights || 'No insights available for this term.'}
+              {metric.notes || 'No notes available for this term.'}
             </p>
           </div>
         </div>

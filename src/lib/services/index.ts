@@ -2,11 +2,7 @@
 // Re-export API service
 export * from './api';
 
-// Re-export Supabase services but avoid duplicating already exported identifiers
-export * from './supabase';
-
-// Export MongoDB service and its functions while avoiding name conflicts
-// We need to use explicit exports to avoid conflicts with Supabase exports
+// Import both services for the migration phase
 import { 
   mongodbService,
   login as mongoLogin,
@@ -17,11 +13,22 @@ import {
   USER_ROLES as MONGODB_USER_ROLES
 } from './mongodbService';
 
+import supabaseService, { USER_ROLES as SUPABASE_USER_ROLES } from './supabaseService';
+
 // Use MinimalStudent to reduce type complexity
 import { MinimalStudent } from '@/types/student';
 
+// Export both services during migration phase
 export {
+  // MongoDB exports
   mongodbService,
-  // We don't re-export these since they conflict with Supabase exports
-  // Use the mongodbService object to access these functions instead
+  mongoLogin as login,
+  mongoRegister as register,
+  mongoLogout as logout,
+  mongoGetUserProfile as getUserProfile,
+  mongoCreateTestUsers as createTestUsers,
+  MONGODB_USER_ROLES as USER_ROLES,
+  
+  // Supabase exports for backward compatibility
+  supabaseService
 };

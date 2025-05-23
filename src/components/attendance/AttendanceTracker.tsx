@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { supabaseService } from '@/lib/services';
+import { mongodbService } from '@/lib/services';
 import { 
   Table, TableBody, TableCell, TableHead, 
   TableHeader, TableRow 
@@ -44,14 +44,18 @@ const AttendanceTracker = () => {
     const fetchStudents = async () => {
       try {
         setIsLoading(true);
-        const data = await supabaseService.getStudents();
+        const response = await mongodbService.getStudents({
+          limit: 100, // Adjust as needed
+          sortBy: 'created_at',
+          sortOrder: 'desc'
+        });
         
         // Initialize attendance status for all students
-        const studentsWithStatus: AttendanceStudent[] = data.map(student => ({
+        const studentsWithStatus: AttendanceStudent[] = response.data.map(student => ({
           id: student.id || student._id,
-          name: student.name,
-          rollNumber: student.rollNumber || student.roll_number || '',
-          department: student.department,
+          name: student.full_name || `${student.first_name} ${student.last_name}`,
+          rollNumber: student.roll_number || '',
+          department: student.department || '',
           status: ''
         }));
         
