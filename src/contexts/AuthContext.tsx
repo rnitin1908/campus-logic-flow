@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from '@/lib/services/api';
 
@@ -39,9 +38,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const token = localStorage.getItem('token');
         if (token) {
           apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const response = await apiClient.get('/auth/profile');
+          const response = await apiClient.get('/auth/me');
           if (response.data) {
-            const transformedUser = transformUser(response.data);
+            // Handle both direct user data and nested structure
+            const userData = response.data.data ? response.data.data.user : response.data;
+            const transformedUser = transformUser(userData);
             setUser(transformedUser);
             setIsAuthenticated(true);
           }
