@@ -9,14 +9,17 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BehaviorRecord as BehaviorRecordType } from '@/types/student';
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { BehaviorRecord as BehaviorRecordType } from '@/types/academic';
 
-interface BehaviorRecordProps {
+export interface BehaviorRecordProps {
   records: BehaviorRecordType[];
   title?: string;
   description?: string;
   maxHeight?: string;
+  studentId?: string;
+  termId?: string;
+  loading?: boolean;
 }
 
 const BehaviorRecord: React.FC<BehaviorRecordProps> = ({
@@ -24,6 +27,7 @@ const BehaviorRecord: React.FC<BehaviorRecordProps> = ({
   title = "Behavior Records",
   description = "Student behavior and discipline history",
   maxHeight = "400px",
+  loading = false
 }) => {
   // Helper function to determine severity badge color
   const getSeverityColor = (severity: string) => {
@@ -51,6 +55,26 @@ const BehaviorRecord: React.FC<BehaviorRecordProps> = ({
     }
     return "bg-slate-100 text-slate-800";
   };
+
+  // Helper to get reporter name
+  const getReporterName = (reporter: BehaviorRecordType['reporter']) => {
+    if (typeof reporter === 'string') return reporter;
+    return reporter?.name || '';
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>Loading behavior records...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center py-8">
+          <div className="animate-pulse">Loading...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -81,7 +105,7 @@ const BehaviorRecord: React.FC<BehaviorRecordProps> = ({
                         <h4 className="font-medium">{record.category}</h4>
                         <p className="text-sm text-muted-foreground">
                           {format(new Date(record.incident_date), 'PPP')}
-                          {record.reporter?.name ? ` • Reported by ${record.reporter.name}` : ''}
+                          {getReporterName(record.reporter) ? ` • Reported by ${getReporterName(record.reporter)}` : ''}
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">

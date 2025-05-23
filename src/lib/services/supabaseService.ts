@@ -1,6 +1,6 @@
 
 // MongoDB-compatible service (renamed for backward compatibility)
-import { mongodbService, USER_ROLES } from './mongodbService';
+import mongodbService, { USER_ROLES } from './mongodbService';
 
 // Re-export MongoDB service as supabaseService for backward compatibility
 const supabaseService = {

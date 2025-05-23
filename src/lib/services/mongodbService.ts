@@ -1,3 +1,4 @@
+
 import { ROLES, USER_ROLES } from '@/lib/roles';
 import { ClassFormData } from '@/types/class';
 import { SchoolFormData } from '@/types/school';
@@ -467,5 +468,18 @@ class MongodbService {
 
 const mongodbService = new MongodbService();
 
-export { ROLES, USER_ROLES };
+// Export the login, register, logout and other functions from the service instance
+export const login = mongodbService.login.bind(mongodbService);
+export const register = mongodbService.register.bind(mongodbService);
+export const logout = mongodbService.logout.bind(mongodbService);
+export const getUserProfile = () => {
+  const user = localStorage.getItem('auth_user');
+  return user ? JSON.parse(user) : null;
+};
+export const createTestUsers = async () => {
+  console.log('Create test users is not implemented in MongoDB service');
+  return { success: false, message: 'Not implemented' };
+};
+
+export { mongodbService, ROLES, USER_ROLES };
 export default mongodbService;

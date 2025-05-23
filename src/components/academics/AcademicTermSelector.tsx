@@ -1,40 +1,62 @@
 
-import React from 'react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { AcademicTerm } from '@/lib/services/supabase/academics/terms';
+import React, { useState, useEffect } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getAcademicTerms } from '@/lib/services/supabase/academics/terms';
 
-interface AcademicTermSelectorProps {
-  terms: AcademicTerm[];
-  currentTerm: string;
+export interface AcademicTermSelectorProps {
+  selectedTerm: string;
   onTermChange: (termId: string) => void;
-  className?: string;
+  label?: string;
 }
 
-const AcademicTermSelector: React.FC<AcademicTermSelectorProps> = ({
-  terms,
-  currentTerm,
-  onTermChange,
-  className,
-}) => {
+const AcademicTermSelector = ({ selectedTerm, onTermChange, label = 'Academic Term' }: AcademicTermSelectorProps) => {
+  const [terms, setTerms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTerms = async () => {
+      try {
+        const termsData = await getAcademicTerms();
+        setTerms(termsData);
+        
+        // If no term is selected and we have terms, select the current one or the first one
+        if (!selectedTerm && termsData.length > 0) {
+          const currentTerm = termsData.find(t => t.is_current);
+          onTermChange(currentTerm ? currentTerm.id : termsData[0].id);
+        }
+      } catch (error) {
+        console.error('Error fetching academic terms:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTerms();
+  }, []);
+
   return (
-    <Select value={currentTerm} onValueChange={onTermChange}>
-      <SelectTrigger className={`w-[240px] ${className || ''}`}>
-        <SelectValue placeholder="Select term" />
-      </SelectTrigger>
-      <SelectContent>
-        {terms.map((term) => (
-          <SelectItem key={term.id} value={term.id}>
-            {term.name}{term.is_current ? ' (Current)' : ''}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <div>
+      <label htmlFor="term" className="block text-sm font-medium mb-2">
+        {label}
+      </label>
+      <Select
+        value={selectedTerm}
+        onValueChange={onTermChange}
+        disabled={loading || terms.length === 0}
+      >
+        <SelectTrigger className="w-full">
+          <SelectValue placeholder={loading ? 'Loading terms...' : 'Select a term'} />
+        </SelectTrigger>
+        <SelectContent>
+          {terms.map((term) => (
+            <SelectItem key={term.id} value={term.id}>
+              {term.name} ({term.academic_year})
+              {term.is_current && ' (Current)'}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 };
 

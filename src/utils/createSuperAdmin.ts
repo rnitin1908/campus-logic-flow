@@ -12,9 +12,9 @@ export const createSuperAdmin = async (userData: any) => {
     });
     
     console.log('Super admin created successfully:', response);
-    return response;
+    return { success: true, message: 'Super admin created successfully', data: response };
   } catch (error) {
     console.error('Error creating super admin:', error);
-    throw error;
+    return { success: false, message: 'Error creating super admin', error };
   }
 };

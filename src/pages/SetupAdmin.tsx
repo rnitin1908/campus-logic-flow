@@ -22,7 +22,7 @@ const SetupAdmin = () => {
     setMessage(null);
 
     try {
-      const result = await createSuperAdmin(email, password, name);
+      const result = await createSuperAdmin({ email, password, name });
       
       if (result.success) {
         setMessage({ type: 'success', text: result.message });

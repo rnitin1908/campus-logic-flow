@@ -100,8 +100,6 @@ const Academics = () => {
               
               <TabsContent value="grades">
                 <GradeReport 
-                  studentId={selectedStudent} 
-                  termId={selectedTerm}
                   grades={grades}
                   loading={loading}
                 />
@@ -109,8 +107,6 @@ const Academics = () => {
               
               <TabsContent value="behavior">
                 <BehaviorRecord 
-                  studentId={selectedStudent} 
-                  termId={selectedTerm}
                   records={behaviorRecords}
                   loading={loading}
                 />

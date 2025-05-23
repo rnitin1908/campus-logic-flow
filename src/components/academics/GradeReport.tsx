@@ -17,18 +17,22 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Grade } from '@/types/student';
+import { Grade } from '@/types/academic';
 
-interface GradeReportProps {
+export interface GradeReportProps {
   grades: Grade[];
   title?: string;
   description?: string;
+  studentId?: string;
+  termId?: string;
+  loading?: boolean;
 }
 
 const GradeReport: React.FC<GradeReportProps> = ({
   grades,
   title = "Grade Report",
   description = "Academic performance across subjects",
+  loading = false,
 }) => {
   // Calculate average grade
   const totalScore = grades.reduce((sum, grade) => sum + (grade.score || 0), 0);
@@ -53,6 +57,31 @@ const GradeReport: React.FC<GradeReportProps> = ({
     if (score >= 60) return "D";
     return "F";
   };
+
+  // Helper to get subject name and code
+  const getSubjectName = (subject: Grade['subject']) => {
+    if (typeof subject === 'string') return subject;
+    return subject?.name || 'Unknown Subject';
+  };
+
+  const getSubjectCode = (subject: Grade['subject']) => {
+    if (typeof subject === 'string') return '-';
+    return subject?.code || '-';
+  };
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>Loading grade data...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center py-8">
+          <div className="animate-pulse">Loading...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -80,10 +109,10 @@ const GradeReport: React.FC<GradeReportProps> = ({
               {grades.map((grade) => (
                 <TableRow key={grade.id}>
                   <TableCell className="font-medium">
-                    {grade.subject?.name || "Unknown Subject"}
+                    {getSubjectName(grade.subject)}
                   </TableCell>
                   <TableCell>
-                    {grade.subject?.code || "-"}
+                    {getSubjectCode(grade.subject)}
                   </TableCell>
                   <TableCell className="text-center">
                     {grade.score || '-'}
