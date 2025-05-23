@@ -1,5 +1,5 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { apiClient } from '@/lib/services/api';
 
 interface User {
@@ -32,7 +32,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuthentication = async () => {
@@ -70,7 +69,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const transformedUser = transformUser(userData);
       setUser(transformedUser);
       setIsAuthenticated(true);
-      navigate('/dashboard');
+      
+      // Navigate programmatically using window.location
+      window.location.href = '/dashboard';
     } catch (error: any) {
       console.error('Login failed:', error);
       throw error;
@@ -91,7 +92,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const transformedUser = transformUser(registeredUser);
       setUser(transformedUser);
       setIsAuthenticated(true);
-      navigate('/dashboard');
+      
+      // Navigate programmatically using window.location
+      window.location.href = '/dashboard';
     } catch (error: any) {
       console.error('Registration failed:', error);
       throw error;
@@ -105,7 +108,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     apiClient.defaults.headers.common['Authorization'] = '';
     setUser(null);
     setIsAuthenticated(false);
-    navigate('/auth/login');
+    
+    // Navigate programmatically using window.location
+    window.location.href = '/auth/login';
   };
 
   const hasRole = (roles: string[]): boolean => {
