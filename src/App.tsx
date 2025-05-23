@@ -28,8 +28,8 @@ import SchoolConfiguration from './pages/tenant/SchoolConfiguration';
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
         <Routes>
           {/* Public routes - no layout */}
           <Route path="/" element={<Index />} />
@@ -171,8 +171,8 @@ function App() {
 
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
