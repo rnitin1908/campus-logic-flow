@@ -61,7 +61,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const response = await apiClient.post('/auth/login', { email, password });
-      const { token, user: userData } = response.data;
+      console.log('Login response:', response.data);
+      
+      // Handle the response structure from MongoDB backend
+      const responseData = response.data;
+      let token, userData;
+      
+      if (responseData.data) {
+        // MongoDB backend structure: { success: true, data: { user, token } }
+        token = responseData.data.token;
+        userData = responseData.data.user;
+      } else if (responseData.token) {
+        // Direct structure: { user, token }
+        token = responseData.token;
+        userData = responseData.user || responseData;
+      } else {
+        throw new Error('Invalid response structure');
+      }
+
+      if (!token || !userData) {
+        throw new Error('Missing token or user data in response');
+      }
 
       localStorage.setItem('token', token);
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -84,7 +104,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     try {
       const response = await apiClient.post('/auth/register', userData);
-      const { token, user: registeredUser } = response.data;
+      console.log('Register response:', response.data);
+      
+      // Handle the response structure from MongoDB backend
+      const responseData = response.data;
+      let token, registeredUser;
+      
+      if (responseData.data) {
+        // MongoDB backend structure: { success: true, data: { user, token } }
+        token = responseData.data.token;
+        registeredUser = responseData.data.user;
+      } else if (responseData.token) {
+        // Direct structure: { user, token }
+        token = responseData.token;
+        registeredUser = responseData.user || responseData;
+      } else {
+        throw new Error('Invalid response structure');
+      }
+
+      if (!token || !registeredUser) {
+        throw new Error('Missing token or user data in response');
+      }
 
       localStorage.setItem('token', token);
       apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -118,6 +158,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const transformUser = (userData: any): User => {
+    console.log('Transforming user data:', userData);
+    
+    if (!userData) {
+      throw new Error('User data is undefined');
+    }
+    
     return {
       id: userData.id || userData._id || '',
       _id: userData._id || userData.id || '',
