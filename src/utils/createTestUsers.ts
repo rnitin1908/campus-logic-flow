@@ -1,5 +1,5 @@
 
-import { mongodbService } from '@/lib/services';
+import { createTestUsers as mongoCreateTestUsers } from '@/lib/services';
 
 // Type for test user results
 export interface TestUserResult {
@@ -31,7 +31,7 @@ export async function createTestUsers(): Promise<TestUserResult[]> {
     
     try {
       // Try to create users with MongoDB
-      const response = await mongodbService.createTestUsers();
+      const response = await mongoCreateTestUsers();
       
       if (response && Array.isArray(response)) {
         // Format the results to match the expected interface

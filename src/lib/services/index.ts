@@ -2,8 +2,9 @@
 // Re-export API service
 export * from './api';
 
-// Import services
-import mongodbService, { 
+// Import services with proper default import
+import mongodbService from './mongodbService';
+import { 
   login,
   register,
   logout,

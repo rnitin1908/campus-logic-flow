@@ -1,4 +1,3 @@
-
 import { ROLES, USER_ROLES } from '@/lib/roles';
 import { ClassFormData } from '@/types/class';
 import { SchoolFormData } from '@/types/school';
@@ -26,6 +25,16 @@ class MongodbService {
       headers['Authorization'] = `Bearer ${this.authToken}`;
     }
     return headers;
+  }
+
+  // Check if MongoDB is configured
+  isMongoDBConfigured(): boolean {
+    try {
+      // Check if we have a valid base URL
+      return !!this.baseURL && this.baseURL !== 'http://localhost:3000/api';
+    } catch (error) {
+      return false;
+    }
   }
 
   async getSchools(params: { limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' } = {}) {
@@ -464,6 +473,29 @@ class MongodbService {
       throw error;
     }
   }
+
+  async createTestUsers() {
+    try {
+      const response = await fetch(`${this.baseURL}/auth/test-users`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create test users: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating test users:', error);
+      throw error;
+    }
+  }
+
+  async getUserProfile() {
+    const user = localStorage.getItem('auth_user');
+    return user ? JSON.parse(user) : null;
+  }
 }
 
 const mongodbService = new MongodbService();
@@ -472,14 +504,8 @@ const mongodbService = new MongodbService();
 export const login = mongodbService.login.bind(mongodbService);
 export const register = mongodbService.register.bind(mongodbService);
 export const logout = mongodbService.logout.bind(mongodbService);
-export const getUserProfile = () => {
-  const user = localStorage.getItem('auth_user');
-  return user ? JSON.parse(user) : null;
-};
-export const createTestUsers = async () => {
-  console.log('Create test users is not implemented in MongoDB service');
-  return { success: false, message: 'Not implemented' };
-};
+export const getUserProfile = mongodbService.getUserProfile.bind(mongodbService);
+export const createTestUsers = mongodbService.createTestUsers.bind(mongodbService);
 
 export { mongodbService, ROLES, USER_ROLES };
 export default mongodbService;
