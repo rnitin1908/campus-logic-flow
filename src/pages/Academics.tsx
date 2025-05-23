@@ -4,26 +4,15 @@ import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-// Import MongoDB services
 import { mongodbService } from '@/lib/services';
 import { apiClient } from '@/lib/services/api';
 
+// Import the academic services
+import { getAcademicTerms } from '@/lib/services/supabase/academics/terms';
+import { getStudentGrades } from '@/lib/services/supabase/academics/grades';
+import { getStudentBehaviorRecords } from '@/lib/services/supabase/academics/behavior';
+
 // These functions will need to be implemented with MongoDB API calls
-const getAcademicTerms = async () => {
-  const response = await apiClient.get('/academic-terms');
-  return response.data;
-};
-
-const getStudentGrades = async (studentId: string, termId: string) => {
-  const response = await apiClient.get(`/grades?studentId=${studentId}&termId=${termId}`);
-  return response.data;
-};
-
-const getStudentBehaviorRecords = async (studentId: string, termId: string) => {
-  const response = await apiClient.get(`/behavior-records?studentId=${studentId}&termId=${termId}`);
-  return response.data;
-};
-
 const getStudentPerformanceForTerm = async (studentId: string, termId: string) => {
   const response = await apiClient.get(`/performance?studentId=${studentId}&termId=${termId}`);
   return response.data;
@@ -38,6 +27,7 @@ const updateOrCreatePerformanceMetric = async (data: any) => {
   const response = await apiClient.post('/performance', data);
   return response.data;
 };
+
 import AcademicTermSelector from '@/components/academics/AcademicTermSelector';
 import GradeReport from '@/components/academics/GradeReport';
 import BehaviorRecord from '@/components/academics/BehaviorRecord';
@@ -63,31 +53,15 @@ const Academics = () => {
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        // Get current user and student details
-        const currentUser = supabaseService.getCurrentUser();
-        if (!currentUser) {
-          toast({
-            title: "Authentication required",
-            description: "Please log in to view academic records",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        // This would typically come from the auth context in a real app
-        // For demo purposes, we'll just get the first student
-        const students = await supabaseService.getStudents();
-        if (students.length === 0) {
-          toast({
-            title: "No student records found",
-            description: "Please make sure you have active student records",
-            variant: "destructive",
-          });
-          setLoading(false);
-          return;
-        }
+        // For demo purposes, we'll create a mock student
+        const mockStudent = {
+          id: '1',
+          name: 'John Doe',
+          rollNumber: 'STU001',
+          department: 'Computer Science'
+        };
         
-        setStudent(students[0]);
+        setStudent(mockStudent);
         
         // Get academic terms
         const termsData = await getAcademicTerms();
@@ -99,7 +73,7 @@ const Academics = () => {
         
         if (currentTerm) {
           setCurrentTermId(currentTerm.id);
-          await loadStudentData(students[0].id, currentTerm.id);
+          await loadStudentData(mockStudent.id, currentTerm.id);
         }
       } catch (error) {
         console.error('Error fetching initial data:', error);
@@ -125,12 +99,16 @@ const Academics = () => {
       setGrades(gradesData);
       
       // Get behavior records
-      const behaviorData = await getStudentBehaviorRecords(studentId);
+      const behaviorData = await getStudentBehaviorRecords(studentId, termId);
       setBehaviorRecords(behaviorData);
       
       // Get performance metrics
-      const metricsData = await getStudentPerformanceForTerm(studentId, termId);
-      setPerformanceMetrics(metricsData);
+      try {
+        const metricsData = await getStudentPerformanceForTerm(studentId, termId);
+        setPerformanceMetrics(metricsData);
+      } catch (error) {
+        console.log('Performance metrics not available, will need to generate');
+      }
       
     } catch (error) {
       console.error('Error loading student data:', error);
@@ -162,11 +140,10 @@ const Academics = () => {
       const insights = await generatePerformanceInsights(student.id, currentTermId);
       
       // Calculate metrics
-      // In a real app, these would be more sophisticated calculations
       const academic_score = grades.length ? 
         grades.reduce((sum, g) => sum + (g.score || 0), 0) / grades.length : 0;
       
-      const positive_behaviors = behaviorRecords.filter(r => r.severity === 'Positive').length;
+      const positive_behaviors = behaviorRecords.filter(r => r.behavior_type === 'positive').length;
       const total_behaviors = behaviorRecords.length;
       const behavior_score = total_behaviors ? (positive_behaviors / total_behaviors) * 100 : 50;
       
@@ -204,7 +181,7 @@ const Academics = () => {
     if (!grades.length) return [];
     
     return grades.map(grade => ({
-      subject: grade.subject?.code || "Unknown",
+      subject: grade.subject_name || "Unknown",
       score: grade.score || 0
     }));
   };
@@ -232,7 +209,7 @@ const Academics = () => {
             <div className="mb-2">
               <h2 className="text-xl font-medium">{student.name}</h2>
               <p className="text-muted-foreground">
-                ID: {student.rollNumber || student.roll_number} • {student.department}
+                ID: {student.rollNumber} • {student.department}
               </p>
             </div>
           )}

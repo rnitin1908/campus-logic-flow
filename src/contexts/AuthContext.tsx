@@ -1,237 +1,98 @@
-
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabaseService, USER_ROLES, mongodbService } from '@/lib/services';
-import { useToast } from '@/components/ui/use-toast';
-// Import supabase client for backward compatibility during migration
-import { supabase } from '@/integrations/supabase/client';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { apiClient } from '@/lib/services/api';
 
 interface User {
   id: string;
+  _id: string;
   name: string;
   email: string;
   role: string;
-  schoolId: string | null;
-  schoolName: string | null;
-  token: string;
+  schoolName: string;
+  schoolId: string;
+  tenantId: string;
+  profileImage: string | null;
+  lastLogin: string;
 }
 
-interface AuthContextProps {
+interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
   isLoading: boolean;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, role?: string, schoolId?: string | null) => Promise<void>;
+  register: (userData: any) => Promise<void>;
   logout: () => void;
   hasRole: (roles: string[]) => boolean;
   setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
-const AuthContext = createContext<AuthContextProps>({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-  login: async () => {},
-  register: async () => {},
-  logout: () => {},
-  hasRole: () => false,
-  setUser: () => {},
-});
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem('user');
-    return storedUser ? JSON.parse(storedUser) : null;
-  });
-  const [isAuthenticated, setIsAuthenticated] = useState(!!user);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if authentication services are configured
-    const isSupabaseReady = supabaseService.isSupabaseConfigured();
-    const isMongoDBReady = mongodbService.isMongoDBConfigured();
-    
-    if (!isSupabaseReady && !isMongoDBReady) {
-      toast({
-        title: "Configuration Error",
-        description: "Neither Supabase nor MongoDB API is configured. Authentication will not work.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
-    
-    // Prioritize MongoDB during migration
-    if (isMongoDBReady) {
-      console.log("Using MongoDB for authentication");
-      // Check for stored user data
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          console.log("Using stored user data with MongoDB:", userData);
-          setUser(userData);
-          setIsAuthenticated(true);
-        } catch (error) {
-          console.error("Error parsing stored user data:", error);
-        }
-      }
-      setIsLoading(false);
-      return;
-    }
-    
-    // Fall back to Supabase if MongoDB is not configured
-    if (isSupabaseReady) {
-      console.log("Falling back to Supabase auth state listener");
-      
-      // Set up auth state listener
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        (event, session) => {
-          console.log("Auth state changed:", event, !!session);
-          
-          if (event === 'SIGNED_IN' && session) {
-            console.log("User signed in, session established");
-            // We'll use the stored user data if available
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-              const userData = JSON.parse(storedUser);
-              console.log("Using stored user data:", userData);
-              setUser(userData);
-              setIsAuthenticated(true);
-            } else if (session.user?.email) {
-              // If no stored data, defer fetching profile
-              console.log("No stored user data, will fetch profile later");
-              setTimeout(() => {
-                supabaseService.login(session.user!.email!, '')
-                  .catch(err => console.error("Error refreshing user data:", err));
-              }, 0);
-            }
-          } else if (event === 'SIGNED_OUT') {
-            console.log("User signed out, clearing session");
-            setUser(null);
-            setIsAuthenticated(false);
-            localStorage.removeItem('user');
-          }
-        }
-      );
-
-      // Check for existing session
-      console.log("Checking for existing session");
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        console.log("Session check result:", !!session);
-        
-        if (session) {
-          // If we have a valid session but no user data, try to fetch profile
-          const storedUser = localStorage.getItem('user');
-          if (!storedUser && session.user?.email) {
-            console.log("Valid session without stored user data, will fetch profile");
-            // We need to fetch and set up user data asynchronously
-            setTimeout(() => {
-              // We use this trick to avoid blocking the UI with synchronous calls
-              supabaseService.login(session.user!.email!, '').catch((err) => {
-                console.error("Error refreshing user data:", err);
-                // We ignore errors here as this is just an attempt to refresh local data
-              });
-            }, 0);
-          } else if (storedUser) {
-            console.log("Using stored user data with valid session");
-            setUser(JSON.parse(storedUser));
+    const checkAuthentication = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          const response = await apiClient.get('/auth/profile');
+          if (response.data) {
+            const transformedUser = transformUser(response.data);
+            setUser(transformedUser);
             setIsAuthenticated(true);
           }
         }
+      } catch (error) {
+        console.error('Authentication check failed:', error);
+        localStorage.removeItem('token');
+      } finally {
         setIsLoading(false);
-      });
+      }
+    };
 
-      return () => {
-        console.log("Cleaning up auth state subscription");
-        subscription.unsubscribe();
-      };
-    }
-    
-    setIsLoading(false);
-  }, [toast]);
-
-  useEffect(() => {
-    setIsAuthenticated(!!user);
-  }, [user]);
+    checkAuthentication();
+  }, []);
 
   const login = async (email: string, password: string) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      console.log("Login attempt with email:", email);
-      
-      // First try Supabase if configured
-      if (supabaseService.isSupabaseConfigured()) {
-        try {
-          console.log("Attempting Supabase authentication");
-          const userData = await supabaseService.login(email, password);
-          console.log("Supabase login successful, user data:", userData);
-          setUser(userData);
-          setIsAuthenticated(true);
-          localStorage.setItem('user', JSON.stringify(userData));
-          return;
-        } catch (supabaseError) {
-          console.error('Supabase login failed, trying MongoDB:', supabaseError);
-          // If Supabase fails, try MongoDB
-        }
-      }
-      
-      // Fall back to MongoDB service
-      console.log("Using MongoDB for authentication");
-      const response = await mongodbService.login(email, password);
-      console.log("MongoDB login successful, response:", response);
-      
-      // Extract user data from MongoDB response and format it to match User type
-      const userData = {
-        id: response.user?.id || response.user?._id || '',
-        name: response.user?.name || email.split('@')[0],
-        email: response.user?.email || email,
-        role: response.user?.role || USER_ROLES.STUDENT,
-        schoolId: response.user?.school_id || null,
-        schoolName: response.user?.school_name || null,
-        token: response.token || ''
-      };
-      
-      console.log("Formatted user data for state:", userData);
-      setUser(userData);
+      const response = await apiClient.post('/auth/login', { email, password });
+      const { token, user: userData } = response.data;
+
+      localStorage.setItem('token', token);
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      const transformedUser = transformUser(userData);
+      setUser(transformedUser);
       setIsAuthenticated(true);
-      localStorage.setItem('user', JSON.stringify(userData));
-    } catch (error) {
+      navigate('/dashboard');
+    } catch (error: any) {
       console.error('Login failed:', error);
-      setIsAuthenticated(false);
-      setUser(null);
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: string = USER_ROLES.STUDENT, schoolId: string | null = null) => {
+  const register = async (userData: any) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      
-      // First try Supabase if configured
-      if (supabaseService.isSupabaseConfigured()) {
-        try {
-          console.log("Attempting Supabase registration");
-          const result = await supabaseService.register(name, email, password, role, schoolId);
-          console.log("Supabase registration successful:", result);
-          // After successful registration, you might want to automatically log the user in
-          await login(email, password);
-          return;
-        } catch (supabaseError) {
-          console.error('Supabase registration failed, trying MongoDB:', supabaseError);
-          // If Supabase fails, try MongoDB
-        }
-      }
-      
-      // Fall back to MongoDB service
-      console.log("Using MongoDB for registration");
-      const result = await mongodbService.register(name, email, password, role);
-      console.log("MongoDB registration successful:", result);
-      // After successful registration, you might want to automatically log the user in
-      await login(email, password);
-    } catch (error) {
+      const response = await apiClient.post('/auth/register', userData);
+      const { token, user: registeredUser } = response.data;
+
+      localStorage.setItem('token', token);
+      apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      const transformedUser = transformUser(registeredUser);
+      setUser(transformedUser);
+      setIsAuthenticated(true);
+      navigate('/dashboard');
+    } catch (error: any) {
       console.error('Registration failed:', error);
       throw error;
     } finally {
@@ -240,38 +101,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    if (supabaseService.isSupabaseConfigured()) {
-      supabaseService.logout();
-    } else {
-      mongodbService.logout();
-    }
+    localStorage.removeItem('token');
+    apiClient.defaults.headers.common['Authorization'] = '';
     setUser(null);
     setIsAuthenticated(false);
+    navigate('/auth/login');
   };
 
-  const hasRole = (allowedRoles: string[]): boolean => {
-    if (!user) return false;
-    return allowedRoles.includes(user.role);
+  const hasRole = (roles: string[]): boolean => {
+    return !!user && roles.includes(user.role);
   };
 
-  const value: AuthContextProps = {
+  const transformUser = (userData: any): User => {
+    return {
+      id: userData.id || userData._id || '',
+      _id: userData._id || userData.id || '',
+      name: userData.name || '',
+      email: userData.email || '',
+      role: userData.role || 'student',
+      schoolName: userData.school_name || userData.schoolName || '',
+      schoolId: userData.school_id || userData.schoolId || '',
+      tenantId: userData.tenant_id || userData.tenantId || '',
+      profileImage: userData.profile_image || userData.profileImage || null,
+      lastLogin: userData.last_login || new Date().toISOString()
+    };
+  };
+
+  const value: AuthContextType = {
     user,
-    isAuthenticated,
     isLoading,
+    isAuthenticated,
     login,
     register,
     logout,
     hasRole,
-    setUser,
+    setUser
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!isLoading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
-
-export const ROLES = USER_ROLES;
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

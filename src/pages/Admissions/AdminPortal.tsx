@@ -1,6 +1,6 @@
-
 import React, { useEffect, useState } from 'react';
 import { apiClient } from '@/lib/services/api';
+import { supabase } from '@/integrations/supabase/client';
 
 // Replace Supabase functions with API calls
 const getAdmissionRequests = async (filters?: any) => {
