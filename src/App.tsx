@@ -31,22 +31,15 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public routes */}
+          {/* Public routes - no layout */}
           <Route path="/" element={<Index />} />
           <Route path="/auth/login" element={<Login />} />
           <Route path="/auth/register" element={<Register />} />
           <Route path="/auth/setup-admin" element={<SetupAdmin />} />
           <Route path="/unauthorized" element={<Unauthorized />} />
-          
-          {/* Tenant registration */}
           <Route path="/register-school" element={<RegisterTenant />} />
-
-          <Route path="/admin/*" element={
-            <RoleBasedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN]}>
-              <AdminRoutes />
-            </RoleBasedRoute>
-          } />
-
+          
+          {/* Protected routes with Layout */}
           <Route path="/dashboard" element={
             <RoleBasedRoute moduleName="DASHBOARD">
               <Layout>
@@ -87,38 +80,12 @@ function App() {
             </RoleBasedRoute>
           } />
 
-                    {/* Path-based routing for school-specific access */}
-          <Route path="/schools/:schoolCode/*" element={
-            <Layout>
-              <Routes>
-                <Route path="dashboard" element={
-                  <RoleBasedRoute moduleName="DASHBOARD">
-                    <Dashboard />
-                  </RoleBasedRoute>
-                } />
-                <Route path="students" element={
-                  <RoleBasedRoute moduleName="STUDENT_MANAGEMENT">
-                    <Students />
-                  </RoleBasedRoute>
-                } />
-                <Route path="academics" element={
-                  <RoleBasedRoute moduleName="CLASS_SUBJECT">
-                    <Academics />
-                  </RoleBasedRoute>
-                } />
-                <Route path="attendance" element={
-                  <RoleBasedRoute moduleName="ATTENDANCE">
-                    <Attendance />
-                  </RoleBasedRoute>
-                } />
-                <Route path="configuration" element={
-                  <RoleBasedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN]}>
-                    <SchoolConfiguration />
-                  </RoleBasedRoute>
-                } />
-                {/* Add other school-specific routes */}
-              </Routes>
-            </Layout>
+          <Route path="/admin/*" element={
+            <RoleBasedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN]}>
+              <Layout>
+                <AdminRoutes />
+              </Layout>
+            </RoleBasedRoute>
           } />
 
           <Route path="/admissions/admin" element={
@@ -137,7 +104,6 @@ function App() {
             </RoleBasedRoute>
           } />
           
-          {/* New Routes for Role-Specific Features */}
           <Route path="/library" element={
             <RoleBasedRoute moduleName="LIBRARY_MANAGEMENT">
               <Layout>
@@ -168,6 +134,39 @@ function App() {
                 <div>Analytics & Reports (placeholder)</div>
               </Layout>
             </RoleBasedRoute>
+          } />
+
+          {/* School-specific routes with Layout */}
+          <Route path="/schools/:schoolCode/*" element={
+            <Layout>
+              <Routes>
+                <Route path="dashboard" element={
+                  <RoleBasedRoute moduleName="DASHBOARD">
+                    <Dashboard />
+                  </RoleBasedRoute>
+                } />
+                <Route path="students" element={
+                  <RoleBasedRoute moduleName="STUDENT_MANAGEMENT">
+                    <Students />
+                  </RoleBasedRoute>
+                } />
+                <Route path="academics" element={
+                  <RoleBasedRoute moduleName="CLASS_SUBJECT">
+                    <Academics />
+                  </RoleBasedRoute>
+                } />
+                <Route path="attendance" element={
+                  <RoleBasedRoute moduleName="ATTENDANCE">
+                    <Attendance />
+                  </RoleBasedRoute>
+                } />
+                <Route path="configuration" element={
+                  <RoleBasedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN, USER_ROLES.SCHOOL_ADMIN]}>
+                    <SchoolConfiguration />
+                  </RoleBasedRoute>
+                } />
+              </Routes>
+            </Layout>
           } />
 
           <Route path="*" element={<NotFound />} />
