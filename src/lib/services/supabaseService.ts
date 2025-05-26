@@ -118,7 +118,7 @@ function validateUserRole(role: string): UserRoleType {
 
 export const supabaseService = {
   // Auth methods
-  login: async (email: string, password: string) => {
+  login: async (email: string, password: string, tenantSlug?: string) => {
     try {
       checkSupabaseAvailability();
       

@@ -72,7 +72,14 @@ const authController = {
    */
   login: async (req, res) => {
     try {
-      const { email, password } = req.body;
+      // Extract tenant slug from URL params or request body
+      let { email, password, tenantSlug } = req.body;
+      console.log('Tenant slug from request body:', email, password, tenantSlug);
+      
+      // If tenantSlug is not in request body but is in URL params, use that
+      if (!tenantSlug && req.params.tenantSlug) {
+        tenantSlug = req.params.tenantSlug;
+      }
 
       // Basic validation
       if (!email || !password) {
@@ -82,8 +89,13 @@ const authController = {
         });
       }
 
-      // Login user
-      const { user, token } = await authService.loginUser(email, password);
+      // Login user with optional tenant validation
+      const { user, token } = await authService.loginUser(email, password, tenantSlug);
+
+      // Add tenant_slug to response if available
+      if (user.tenant_slug || tenantSlug) {
+        user.tenant_slug = user.tenant_slug || tenantSlug;
+      }
 
       res.status(200).json({
         success: true,
@@ -96,9 +108,10 @@ const authController = {
     } catch (error) {
       console.error('Error in user login:', error);
       
-      // Handle invalid credentials
+      // Handle invalid credentials or tenant mismatch
       if (error.message.includes('Invalid email or password') || 
-          error.message.includes('Account is')) {
+          error.message.includes('Account is') ||
+          error.message.includes('not authorized for tenant')) {
         return res.status(401).json({
           success: false,
           message: error.message

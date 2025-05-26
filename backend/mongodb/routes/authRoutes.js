@@ -8,6 +8,10 @@ const router = express.Router();
 // Public routes
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+
+// Tenant-specific routes
+router.post('/:tenantSlug/login', authController.login); // Tenant-specific login endpoint
+
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 // Restricted to super admin only for security

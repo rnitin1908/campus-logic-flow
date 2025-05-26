@@ -13,13 +13,14 @@ interface User {
   schoolId: string | null;
   schoolName: string | null;
   token: string;
+  tenantSlug?: string; // Track which tenant this user belongs to
 }
 
 interface AuthContextProps {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, tenantSlug?: string) => Promise<void>;
   register: (name: string, email: string, password: string, role?: string, schoolId?: string | null) => Promise<void>;
   logout: () => void;
   hasRole: (roles: string[]) => boolean;
@@ -155,47 +156,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(!!user);
   }, [user]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, tenantSlug?: string) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      console.log("Login attempt with email:", email);
-      
       // First try Supabase if configured
-      if (supabaseService.isSupabaseConfigured()) {
-        try {
-          console.log("Attempting Supabase authentication");
-          const userData = await supabaseService.login(email, password);
-          console.log("Supabase login successful, user data:", userData);
-          setUser(userData);
-          setIsAuthenticated(true);
-          localStorage.setItem('user', JSON.stringify(userData));
-          return;
-        } catch (supabaseError) {
-          console.error('Supabase login failed, trying MongoDB:', supabaseError);
-          // If Supabase fails, try MongoDB
-        }
-      }
+      // if (supabaseService.isSupabaseConfigured()) {
+      //   try {
+      //     console.log("Attempting Supabase authentication");
+      //     const userData = await supabaseService.login(email, password, tenantSlug);
+      //     console.log("Supabase login successful, user data:", userData);
+      //     setUser(userData);
+      //     setIsAuthenticated(true);
+      //     localStorage.setItem('user', JSON.stringify(userData));
+      //     return;
+      //   } catch (supabaseError) {
+      //     console.error('Supabase login failed, trying MongoDB:', supabaseError);
+      //     // If Supabase fails, try MongoDB
+      //   }
+      // }
       
       // Fall back to MongoDB service
-      console.log("Using MongoDB for authentication");
-      const response = await mongodbService.login(email, password);
+      console.log(`Using MongoDB for authentication with tenant slug: ${tenantSlug || 'none'}`);
+      const response = await mongodbService.login(email, password, tenantSlug);
       console.log("MongoDB login successful, response:", response);
       
       // Extract user data from MongoDB response and format it to match User type
       const userData = {
-        id: response.user?.id || response.user?._id || '',
+        id: response.user?.id || (response.user as any)?._id || '',
         name: response.user?.name || email.split('@')[0],
         email: response.user?.email || email,
         role: response.user?.role || USER_ROLES.STUDENT,
         schoolId: response.user?.school_id || null,
-        schoolName: response.user?.school_name || null,
-        token: response.token || ''
+        schoolName: response.user?.school_name || (response.user as any)?.school_name || null,
+        token: response.token || '',
+        tenantSlug: response.user?.tenant_slug || tenantSlug // Use the provided tenant slug or the one from response
       };
       
-      console.log("Formatted user data for state:", userData);
+      console.log("Formatted user data for state with tenant:", userData);
       setUser(userData);
       setIsAuthenticated(true);
       localStorage.setItem('user', JSON.stringify(userData));
+      return userData;
     } catch (error) {
       console.error('Login failed:', error);
       setIsAuthenticated(false);
@@ -240,11 +241,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    if (supabaseService.isSupabaseConfigured()) {
-      supabaseService.logout();
-    } else {
+    // if (supabaseService.isSupabaseConfigured()) {
+    //   supabaseService.logout();
+    // } else {
       mongodbService.logout();
-    }
+    // }
     setUser(null);
     setIsAuthenticated(false);
   };

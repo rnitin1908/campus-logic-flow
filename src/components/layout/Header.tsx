@@ -1,8 +1,9 @@
 
 import { Button } from '@/components/ui/button';
 import { LogOut, User } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenant } from '@/contexts/TenantContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +15,24 @@ import {
 
 export function Header() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout, user } = useAuth();
+  const { tenantSlug, clearTenant } = useTenant();
   
   const handleLogout = () => {
+    // Store tenant slug temporarily if needed for redirection
+    const currentTenantSlug = tenantSlug;
+    
+    // Perform the logout action
     logout();
+    
+    // Clear tenant data if we're in a tenant context
+    if (currentTenantSlug) {
+      clearTenant();
+    }
+    
+    // Always redirect to /auth/login after logout
+    // This prevents the not-found issue when tenant context is cleared
     navigate('/auth/login');
   };
 
@@ -44,7 +59,7 @@ export function Header() {
             className="hidden md:flex"
           >
             <LogOut className="mr-2 h-4 w-4" />
-            Logout
+            Logout {tenantSlug ? `(${tenantSlug})` : ''}
           </Button>
           
           <DropdownMenu>

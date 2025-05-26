@@ -62,10 +62,16 @@ const createAuthClient = () => {
 const authClient = createAuthClient();
 
 // Login with MongoDB backend
-export const login = async (email: string, password: string) => {
+export const login = async (email: string, password: string, tenantSlug?: string) => {
   try {
-    console.log("Using MongoDB service for login");
-    const response = await apiClient.post('/auth/login', { email, password });
+    console.log(`Using MongoDB service for login with tenant: ${tenantSlug || 'none'}`);
+    
+    // Include tenantSlug in the request if provided
+    const payload = tenantSlug 
+      ? { email, password, tenantSlug } 
+      : { email, password };
+      
+    const response = await apiClient.post('/auth/login', payload);
     
     if (!response.data || !response.data.data) {
       throw new Error('No data returned from login');
@@ -84,9 +90,15 @@ export const login = async (email: string, password: string) => {
       role: user.role || USER_ROLES.STUDENT,
       last_login: new Date().toISOString(),
       tenant_id: user.tenant_id,
+      tenant_slug: user.tenant_slug || tenantSlug, // Store the tenant slug
       school_id: user.school_id,
       profile_image: user.profile_image
     };
+    
+    // Store tenant slug in localStorage if it exists
+    if (user.tenant_slug || tenantSlug) {
+      localStorage.setItem('tenantSlug', user.tenant_slug || tenantSlug);
+    }
     
     localStorage.setItem('auth_user', JSON.stringify(userData));
     
@@ -117,7 +129,9 @@ export const register = async (name: string, email: string, password: string, ro
 
 // Logout
 export const logout = () => {
-  localStorage.removeItem('user');
+  localStorage.removeItem('tenantSlug');
+  localStorage.removeItem('tenantId');
+  localStorage.clear();
 };
 
 // Get current user profile
@@ -184,7 +198,7 @@ export const isMongoDBConfigured = () => {
 };
 
 // Student-related functions to match Supabase student service
-export const createStudent = async (studentData: StudentFormData) => {
+export const createStudent = async (studentData: any) => {
   try {
     // Convert frontend StudentFormData to MongoDB format
     const mongoStudent = {
@@ -221,7 +235,7 @@ export const createStudent = async (studentData: StudentFormData) => {
   }
 };
 
-export const updateStudent = async (id: string, studentData: Partial<StudentFormData>) => {
+export const updateStudent = async (id: string, studentData: Partial<any>) => {
   try {
     // Convert frontend StudentFormData to MongoDB format
     const mongoStudent: any = {};
