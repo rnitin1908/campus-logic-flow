@@ -45,148 +45,146 @@ function AppContent() {
   const { tenantSlug } = useTenant();
 
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/auth/login" element={<Login />} />
-        <Route path="/auth/register" element={<Register />} />
-        <Route path="/register-tenant" element={<RegisterTenant />} />
-        <Route path="/setup" element={<SetupAdmin />} />
-        <Route path="/unauthorized" element={<Unauthorized />} />
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/auth/login" element={<Login />} />
+      <Route path="/auth/register" element={<Register />} />
+      <Route path="/register-tenant" element={<RegisterTenant />} />
+      <Route path="/setup" element={<SetupAdmin />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {/* Protected Routes */}
-        <Route 
-          path="/*" 
-          element={
-            user ? (
-              <Layout>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  
-                  {/* School Configuration Routes */}
-                  <Route 
-                    path="/school-configuration" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
-                        <SchoolConfiguration2 />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/class-management" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
-                        <ClassManagement />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/academic-year" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
-                        <AcademicYearSetup />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  
-                  {/* Student Management Routes */}
-                  <Route 
-                    path="/students" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin', 'school_admin', 'teacher', 'receptionist']}>
-                        <Students />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  
-                  {/* Staff Management Routes */}
-                  <Route 
-                    path="/staff" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
-                        <Staff />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  
-                  {/* Academic Routes */}
-                  <Route 
-                    path="/academics" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin', 'school_admin', 'teacher', 'student', 'parent']}>
-                        <Academics />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  
-                  {/* Attendance Routes */}
-                  <Route 
-                    path="/attendance" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin', 'school_admin', 'teacher']}>
-                        <Attendance />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  
-                  {/* Admin Routes */}
-                  <Route 
-                    path="/admin/*" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin']}>
-                        <AdminRoutes />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/create-users" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin']}>
-                        <CreateUsers />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  
-                  {/* Admission Routes */}
-                  <Route 
-                    path="/admissions/parent" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['parent']}>
-                        <ParentPortal />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  <Route 
-                    path="/admissions/admin" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin', 'school_admin', 'receptionist']}>
-                        <AdminPortal />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  
-                  {/* Tenant Routes */}
-                  <Route 
-                    path="/configuration" 
-                    element={
-                      <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
-                        <SchoolConfiguration />
-                      </RoleBasedRoute>
-                    } 
-                  />
-                  
-                  {/* Catch all route */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </Layout>
-            ) : (
-              <Navigate to="/auth/login" replace />
-            )
-          } 
-        />
-      </Routes>
-    </Router>
+      {/* Protected Routes */}
+      <Route 
+        path="/*" 
+        element={
+          user ? (
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                
+                {/* School Configuration Routes */}
+                <Route 
+                  path="/school-configuration" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
+                      <SchoolConfiguration2 />
+                    </RoleBasedRoute>
+                  } 
+                />
+                <Route 
+                  path="/class-management" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
+                      <ClassManagement />
+                    </RoleBasedRoute>
+                  } 
+                />
+                <Route 
+                  path="/academic-year" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
+                      <AcademicYearSetup />
+                    </RoleBasedRoute>
+                  } 
+                />
+                
+                {/* Student Management Routes */}
+                <Route 
+                  path="/students" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin', 'teacher', 'receptionist']}>
+                      <Students />
+                    </RoleBasedRoute>
+                  } 
+                />
+                
+                {/* Staff Management Routes */}
+                <Route 
+                  path="/staff" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
+                      <Staff />
+                    </RoleBasedRoute>
+                  } 
+                />
+                
+                {/* Academic Routes */}
+                <Route 
+                  path="/academics" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin', 'teacher', 'student', 'parent']}>
+                      <Academics />
+                    </RoleBasedRoute>
+                  } 
+                />
+                
+                {/* Attendance Routes */}
+                <Route 
+                  path="/attendance" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin', 'teacher']}>
+                      <Attendance />
+                    </RoleBasedRoute>
+                  } 
+                />
+                
+                {/* Admin Routes */}
+                <Route 
+                  path="/admin/*" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin']}>
+                      <AdminRoutes />
+                    </RoleBasedRoute>
+                  } 
+                />
+                <Route 
+                  path="/create-users" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin']}>
+                      <CreateUsers />
+                    </RoleBasedRoute>
+                  } 
+                />
+                
+                {/* Admission Routes */}
+                <Route 
+                  path="/admissions/parent" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['parent']}>
+                      <ParentPortal />
+                    </RoleBasedRoute>
+                  } 
+                />
+                <Route 
+                  path="/admissions/admin" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin', 'receptionist']}>
+                      <AdminPortal />
+                    </RoleBasedRoute>
+                  } 
+                />
+                
+                {/* Tenant Routes */}
+                <Route 
+                  path="/configuration" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
+                      <SchoolConfiguration />
+                    </RoleBasedRoute>
+                  } 
+                />
+                
+                {/* Catch all route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          ) : (
+            <Navigate to="/auth/login" replace />
+          )
+        } 
+      />
+    </Routes>
   );
 }
 
@@ -195,13 +193,15 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
         <AuthProvider>
-          <TenantProvider>
-            <div className="min-h-screen bg-background font-sans antialiased">
-              <AppContent />
-              <Toaster />
-              <Sonner />
-            </div>
-          </TenantProvider>
+          <div className="min-h-screen bg-background font-sans antialiased">
+            <Router>
+              <TenantProvider>
+                <AppContent />
+              </TenantProvider>
+            </Router>
+            <Toaster />
+            <Sonner />
+          </div>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
