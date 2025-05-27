@@ -1,11 +1,12 @@
 const express = require('express');
-const dotenv = require('dotenv');
+// const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
-const configureSecurityMiddleware = require('./middleware/security');
+
 
 // MongoDB connection
+require('dotenv').config({ path: path.join(__dirname, '.env') });
+const configureSecurityMiddleware = require('./middleware/security');
 const { connectToDatabase } = require('./config/database/mongodb');
 
 // Import routes

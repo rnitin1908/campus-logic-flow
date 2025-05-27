@@ -1,512 +1,465 @@
 
-import { ROLES, USER_ROLES } from '@/lib/roles';
-import { ClassFormData } from '@/types/class';
-import { SchoolFormData } from '@/types/school';
-import { StudentFormData } from '@/types/student';
-import { UserFormData } from '@/types/user';
-
-class MongodbService {
-  private baseURL: string;
-  private authToken: string | null;
-
-  constructor() {
-    this.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-    this.authToken = null;
-  }
-
-  setAuthToken(token: string | null) {
-    this.authToken = token;
-  }
-
-  getHeaders() {
-    const headers: { [key: string]: string } = {
-      'Content-Type': 'application/json',
-    };
-    if (this.authToken) {
-      headers['Authorization'] = `Bearer ${this.authToken}`;
-    }
-    return headers;
-  }
-
-  // Check if MongoDB is configured
-  isMongoDBConfigured(): boolean {
-    try {
-      // Check if we have a valid base URL
-      return !!this.baseURL && this.baseURL !== 'http://localhost:3000/api';
-    } catch (error) {
-      return false;
-    }
-  }
-
-  async getSchools(params: { limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' } = {}) {
-    const queryParams = new URLSearchParams();
-    if (params.limit) {
-      queryParams.append('limit', params.limit.toString());
-    }
-    if (params.sortBy) {
-      queryParams.append('sortBy', params.sortBy);
-    }
-    if (params.sortOrder) {
-      queryParams.append('sortOrder', params.sortOrder);
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/schools?${queryParams.toString()}`, {
-        method: 'GET',
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch schools: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching schools:', error);
-      throw error;
-    }
-  }
-
-  async createSchool(schoolData: SchoolFormData) {
-    try {
-      const response = await fetch(`${this.baseURL}/schools`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify(schoolData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create school: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating school:', error);
-      throw error;
-    }
-  }
-
-  async updateSchool(id: string, schoolData: SchoolFormData) {
-    try {
-      const response = await fetch(`${this.baseURL}/schools/${id}`, {
-        method: 'PUT',
-        headers: this.getHeaders(),
-        body: JSON.stringify(schoolData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update school: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating school:', error);
-      throw error;
-    }
-  }
-
-  async deleteSchool(id: string) {
-    try {
-      const response = await fetch(`${this.baseURL}/schools/${id}`, {
-        method: 'DELETE',
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete school: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error deleting school:', error);
-      throw error;
-    }
-  }
-
-  async getClasses(params: { limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' } = {}) {
-    const queryParams = new URLSearchParams();
-    if (params.limit) {
-      queryParams.append('limit', params.limit.toString());
-    }
-    if (params.sortBy) {
-      queryParams.append('sortBy', params.sortBy);
-    }
-    if (params.sortOrder) {
-      queryParams.append('sortOrder', params.sortOrder);
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/classes?${queryParams.toString()}`, {
-        method: 'GET',
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch classes: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching classes:', error);
-      throw error;
-    }
-  }
-
-  async createClass(classData: ClassFormData) {
-    try {
-      const response = await fetch(`${this.baseURL}/classes`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify(classData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create class: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating class:', error);
-      throw error;
-    }
-  }
-
-  async updateClass(id: string, classData: ClassFormData) {
-    try {
-      const response = await fetch(`${this.baseURL}/classes/${id}`, {
-        method: 'PUT',
-        headers: this.getHeaders(),
-        body: JSON.stringify(classData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update class: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating class:', error);
-      throw error;
-    }
-  }
-
-  async deleteClass(id: string) {
-    try {
-      const response = await fetch(`${this.baseURL}/classes/${id}`, {
-        method: 'DELETE',
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete class: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error deleting class:', error);
-      throw error;
-    }
-  }
-
-  async getStudents(params: { limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' } = {}) {
-    const queryParams = new URLSearchParams();
-    if (params.limit) {
-      queryParams.append('limit', params.limit.toString());
-    }
-    if (params.sortBy) {
-      queryParams.append('sortBy', params.sortBy);
-    }
-    if (params.sortOrder) {
-      queryParams.append('sortOrder', params.sortOrder);
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/students?${queryParams.toString()}`, {
-        method: 'GET',
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch students: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching students:', error);
-      throw error;
-    }
-  }
-
-  async createStudent(studentData: StudentFormData) {
-    try {
-      const response = await fetch(`${this.baseURL}/students`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify({
-          // Convert frontend data to MongoDB format
-          first_name: studentData.first_name || studentData.name?.split(' ')[0] || '',
-          last_name: studentData.last_name || studentData.name?.split(' ').slice(1).join(' ') || '',
-          email: studentData.email,
-          phone: studentData.phone || studentData.contactNumber || '',
-          date_of_birth: studentData.date_of_birth || studentData.dateOfBirth,
-          gender: studentData.gender,
-          address: studentData.address,
-          city: studentData.city || '',
-          state: studentData.state || '',
-          country: studentData.country || '',
-          pincode: studentData.pincode || '',
-          admission_number: studentData.admission_number || '',
-          admission_date: studentData.admission_date || studentData.admissionDate,
-          school_id: studentData.school_id || '',
-          class_id: studentData.class_id || '',
-          section: studentData.section || '',
-          academic_year: studentData.academic_year || studentData.academicYear,
-          roll_number: studentData.rollNumber || studentData.roll_number || '',
-          department: studentData.department || '',
-          status: studentData.status || 'active'
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to create student: ${response.statusText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating student:', error);
-      throw error;
-    }
-  }
-
-  async updateStudent(id: string, studentData: Partial<StudentFormData>) {
-    try {
-      const response = await fetch(`${this.baseURL}/students/${id}`, {
-        method: 'PUT',
-        headers: this.getHeaders(),
-        body: JSON.stringify({
-          // Convert frontend data to MongoDB format
-          first_name: studentData.first_name,
-          last_name: studentData.last_name,
-          email: studentData.email,
-          phone: studentData.phone || studentData.contactNumber,
-          date_of_birth: studentData.date_of_birth || studentData.dateOfBirth,
-          gender: studentData.gender,
-          address: studentData.address,
-          city: studentData.city,
-          state: studentData.state,
-          country: studentData.country,
-          pincode: studentData.pincode,
-          admission_number: studentData.admission_number,
-          admission_date: studentData.admission_date || studentData.admissionDate,
-          school_id: studentData.school_id,
-          class_id: studentData.class_id,
-          section: studentData.section,
-          academic_year: studentData.academic_year || studentData.academicYear,
-          roll_number: studentData.rollNumber || studentData.roll_number,
-          department: studentData.department,
-          status: studentData.status
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Failed to update student: ${response.statusText}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating student:', error);
-      throw error;
-    }
-  }
-
-  async deleteStudent(id: string) {
-    try {
-      const response = await fetch(`${this.baseURL}/students/${id}`, {
-        method: 'DELETE',
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete student: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error deleting student:', error);
-      throw error;
-    }
-  }
-
-  async getUsers(params: { limit?: number; sortBy?: string; sortOrder?: 'asc' | 'desc' } = {}) {
-    const queryParams = new URLSearchParams();
-    if (params.limit) {
-      queryParams.append('limit', params.limit.toString());
-    }
-    if (params.sortBy) {
-      queryParams.append('sortBy', params.sortBy);
-    }
-    if (params.sortOrder) {
-      queryParams.append('sortOrder', params.sortOrder);
-    }
-
-    try {
-      const response = await fetch(`${this.baseURL}/users?${queryParams.toString()}`, {
-        method: 'GET',
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch users: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      throw error;
-    }
-  }
-
-  async createUser(userData: UserFormData) {
-    try {
-      const response = await fetch(`${this.baseURL}/users`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-        body: JSON.stringify(userData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create user: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating user:', error);
-      throw error;
-    }
-  }
-
-  async updateUser(id: string, userData: UserFormData) {
-    try {
-      const response = await fetch(`${this.baseURL}/users/${id}`, {
-        method: 'PUT',
-        headers: this.getHeaders(),
-        body: JSON.stringify(userData)
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to update user: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error updating user:', error);
-      throw error;
-    }
-  }
-
-  async deleteUser(id: string) {
-    try {
-      const response = await fetch(`${this.baseURL}/users/${id}`, {
-        method: 'DELETE',
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to delete user: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      throw error;
-    }
-  }
-
-  async login(credentials: { email: string; password: string }) {
-    try {
-      const response = await fetch(`${this.baseURL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(credentials),
-      });
-
-      if (!response.ok) {
-        throw new Error('Invalid credentials');
-      }
-
-      const data = await response.json();
-      this.setAuthToken(data.token);
-      localStorage.setItem('auth_token', data.token);
-      localStorage.setItem('auth_user', JSON.stringify(data.user));
-      return data;
-    } catch (error) {
-      console.error('Login failed:', error);
-      throw error;
-    }
-  }
-
-  async logout() {
-    this.setAuthToken(null);
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('auth_user');
-  }
-
-  async register(userData: UserFormData) {
-     try {
-      const response = await fetch(`${this.baseURL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(userData),
-      });
-
-      if (!response.ok) {
-        throw new Error('Registration failed');
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error('Registration failed:', error);
-      throw error;
-    }
-  }
-
-  async createTestUsers() {
-    try {
-      const response = await fetch(`${this.baseURL}/auth/test-users`, {
-        method: 'POST',
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to create test users: ${response.statusText}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating test users:', error);
-      throw error;
-    }
-  }
-
-  async getUserProfile() {
-    const user = localStorage.getItem('auth_user');
-    return user ? JSON.parse(user) : null;
-  }
+import axios from 'axios';
+import { apiClient } from './api';
+import { Student, StudentFormData, GenderType, StatusType } from '@/types/student';
+// import { School } from '@/types/school';
+// import { Class } from '@/types/class';
+
+// Default user roles - matches Supabase roles
+export const USER_ROLES = {
+SUPER_ADMIN: 'super_admin',
+SCHOOL_ADMIN: 'school_admin',
+TEACHER: 'teacher',
+STUDENT: 'student',
+PARENT: 'parent',
+ACCOUNTANT: 'accountant',
+LIBRARIAN: 'librarian',
+RECEPTIONIST: 'receptionist',
+TRANSPORT_MANAGER: 'transport_manager',
+};
+
+// Configure axios instance with authentication interceptor
+const createAuthClient = () => {
+const instance = axios.create({
+baseURL: '/api',
+headers: {
+'Content-Type': 'application/json',
+},
+});
+
+// Add auth token to requests
+instance.interceptors.request.use(
+(config) => {
+const token = localStorage.getItem('auth_token');
+if (token) {
+config.headers['Authorization'] = `Bearer ${token}`;
+}
+return config;
+},
+(error) => {
+return Promise.reject(error);
+}
+);
+
+// Handle auth errors
+instance.interceptors.response.use(
+(response) => response,
+(error) => {
+if (error.response && error.response.status === 401) {
+// Token expired or invalid, logout user
+localStorage.removeItem('auth_token');
+localStorage.removeItem('auth_user');
+window.location.href = '/login';
+}
+return Promise.reject(error);
+}
+);
+
+return instance;
+};
+
+// Create authenticated API client
+const authClient = createAuthClient();
+
+// Login with MongoDB backend
+export const login = async (email: string, password: string, tenantSlug?: string) => {
+try {
+console.log(`Using MongoDB service for login with tenant: ${tenantSlug || 'none'}`);
+
+// Include tenantSlug in the request if provided
+const payload = tenantSlug
+? { email, password, tenantSlug }
+: { email, password };
+
+const response = await apiClient.post('/auth/login', payload);
+
+if (!response.data || !response.data.data) {
+throw new Error('No data returned from login');
 }
 
-const mongodbService = new MongodbService();
+const { user, token } = response.data.data;
 
-// Export the login, register, logout and other functions from the service instance
-export const login = mongodbService.login.bind(mongodbService);
-export const register = mongodbService.register.bind(mongodbService);
-export const logout = mongodbService.logout.bind(mongodbService);
-export const getUserProfile = mongodbService.getUserProfile.bind(mongodbService);
-export const createTestUsers = mongodbService.createTestUsers.bind(mongodbService);
+// Store token
+localStorage.setItem('auth_token', token);
 
-export { mongodbService, ROLES, USER_ROLES };
+// Store user data in localStorage with the same structure as Supabase
+const userData = {
+id: user._id,
+name: user.name || email.split('@')[0],
+email: user.email || email,
+role: user.role || USER_ROLES.STUDENT,
+last_login: new Date().toISOString(),
+tenant_id: user.tenant_id,
+tenant_slug: user.tenant_slug || tenantSlug, // Store the tenant slug
+school_id: user.school_id,
+profile_image: user.profile_image
+};
+
+// Store tenant slug in localStorage if it exists
+if (user.tenant_slug || tenantSlug) {
+localStorage.setItem('tenantSlug', user.tenant_slug || tenantSlug);
+}
+
+localStorage.setItem('auth_user', JSON.stringify(userData));
+
+return { user: userData, token };
+} catch (error) {
+console.error('MongoDB login error:', error);
+throw error.response?.data?.message || error.message || 'Login failed';
+}
+};
+
+// Register with MongoDB backend
+export const register = async (name: string, email: string, password: string, role: string = USER_ROLES.STUDENT) => {
+try {
+console.log("Using MongoDB service for registration");
+const response = await apiClient.post('/auth/register', {
+name,
+email,
+password,
+role
+});
+
+return response.data;
+} catch (error) {
+console.error('MongoDB registration error:', error);
+throw error.response?.data?.message || error.message || 'Registration failed';
+}
+};
+
+// Logout
+export const logout = () => {
+localStorage.removeItem('tenantSlug');
+localStorage.removeItem('tenantId');
+localStorage.clear();
+};
+
+// Get current user profile
+export const getUserProfile = async () => {
+try {
+const response = await apiClient.get('/auth/profile');
+return response.data;
+} catch (error) {
+console.error('Get profile error:', error);
+throw error;
+}
+};
+
+// Create test users with MongoDB
+export const createTestUsers = async () => {
+try {
+console.log("Creating test users with MongoDB");
+
+// Create test users (admin, teacher, student, etc.)
+const response = await apiClient.post('/auth/create-test-users', {
+tenantId: 'default',
+schoolId: 'default'
+});
+
+console.log('Test users created successfully:', response.data);
+
+// Format the response to match the expected interface
+if (response.data && response.data.success) {
+const users = response.data.data.map((user: any) => ({
+name: user.name,
+email: user.email,
+role: user.role,
+password: 'Password123!', // Default password for all test users
+status: user.status,
+message: user.message || ''
+}));
+
+return users;
+}
+
+throw new Error('Failed to create test users');
+} catch (error) {
+console.error('Error creating test users:', error);
+
+// Return default users as fallback
+return [
+{ name: "Super Admin", email: "superadmin@campuscore.edu", role: "super_admin", password: "Password123!", status: "Default" },
+{ name: "School Admin", email: "schooladmin@campuscore.edu", role: "school_admin", password: "Password123!", status: "Default" },
+{ name: "Teacher", email: "teacher@campuscore.edu", role: "teacher", password: "Password123!", status: "Default" },
+{ name: "Student", email: "student@campuscore.edu", role: "student", password: "Password123!", status: "Default" },
+{ name: "Parent", email: "parent@campuscore.edu", role: "parent", password: "Password123!", status: "Default" },
+{ name: "Accountant", email: "accountant@campuscore.edu", role: "accountant", password: "Password123!", status: "Default" },
+{ name: "Librarian", email: "librarian@campuscore.edu", role: "librarian", password: "Password123!", status: "Default" },
+{ name: "Receptionist", email: "receptionist@campuscore.edu", role: "receptionist", password: "Password123!", status: "Default" },
+{ name: "Transport Manager", email: "transport@campuscore.edu", role: "transport_manager", password: "Password123!", status: "Default" }
+];
+}
+};
+
+// Check if MongoDB API is configured
+export const isMongoDBConfigured = () => {
+const apiUrl = import.meta.env.VITE_API_URL;
+return !!apiUrl;
+};
+
+// Student-related functions to match Supabase student service
+export const createStudent = async (studentData: any) => {
+try {
+// Convert frontend StudentFormData to MongoDB format
+const mongoStudent = {
+first_name: studentData.first_name,
+middle_name: studentData.middle_name || '',
+last_name: studentData.last_name,
+gender: studentData.gender,
+date_of_birth: studentData.date_of_birth,
+email: studentData.email,
+phone: studentData.phone,
+address: {
+street: studentData.address,
+city: studentData.city,
+state: studentData.state,
+country: studentData.country || 'India',
+pincode: studentData.pincode
+},
+admission_number: studentData.admission_number,
+roll_number: studentData.roll_number,
+admission_date: studentData.admission_date,
+school_id: studentData.school_id,
+class_id: studentData.class_id,
+section: studentData.section,
+academic_year: studentData.academic_year,
+status: studentData.status || 'active',
+tenant_id: getCurrentTenantId()
+};
+
+const response = await authClient.post('/students', mongoStudent);
+return response.data.data;
+} catch (error) {
+console.error('Error creating student:', error);
+throw error;
+}
+};
+
+export const updateStudent = async (id: string, studentData: Partial<any>) => {
+try {
+// Convert frontend StudentFormData to MongoDB format
+const mongoStudent: any = {};
+
+// Only include fields that are present in the update data
+if (studentData.first_name) mongoStudent.first_name = studentData.first_name;
+if (studentData.middle_name !== undefined) mongoStudent.middle_name = studentData.middle_name;
+if (studentData.last_name) mongoStudent.last_name = studentData.last_name;
+if (studentData.gender) mongoStudent.gender = studentData.gender;
+if (studentData.date_of_birth) mongoStudent.date_of_birth = studentData.date_of_birth;
+if (studentData.email) mongoStudent.email = studentData.email;
+if (studentData.phone) mongoStudent.phone = studentData.phone;
+
+// Address fields
+if (studentData.address || studentData.city || studentData.state || studentData.country || studentData.pincode) {
+mongoStudent.address = {};
+if (studentData.address) mongoStudent.address.street = studentData.address;
+if (studentData.city) mongoStudent.address.city = studentData.city;
+if (studentData.state) mongoStudent.address.state = studentData.state;
+if (studentData.country) mongoStudent.address.country = studentData.country;
+if (studentData.pincode) mongoStudent.address.pincode = studentData.pincode;
+}
+
+if (studentData.admission_number) mongoStudent.admission_number = studentData.admission_number;
+if (studentData.roll_number) mongoStudent.roll_number = studentData.roll_number;
+if (studentData.admission_date) mongoStudent.admission_date = studentData.admission_date;
+if (studentData.school_id) mongoStudent.school_id = studentData.school_id;
+if (studentData.class_id) mongoStudent.class_id = studentData.class_id;
+if (studentData.section) mongoStudent.section = studentData.section;
+if (studentData.academic_year) mongoStudent.academic_year = studentData.academic_year;
+if (studentData.status) mongoStudent.status = studentData.status;
+
+const response = await authClient.put(`/students/${id}`, mongoStudent);
+return response.data.data;
+} catch (error) {
+console.error('Error updating student:', error);
+throw error;
+}
+};
+
+export const deleteStudent = async (id: string) => {
+try {
+const response = await authClient.delete(`/students/${id}`);
+return response.data;
+} catch (error) {
+console.error('Error deleting student:', error);
+throw error;
+}
+};
+
+export const getStudents = async (options: {
+page?: number;
+limit?: number;
+schoolId?: string;
+classId?: string;
+section?: string;
+status?: string;
+search?: string;
+sortBy?: string;
+sortOrder?: 'asc' | 'desc';
+}) => {
+try {
+const {
+page = 1,
+limit = 10,
+schoolId,
+classId,
+section,
+status,
+search,
+sortBy = 'created_at',
+sortOrder = 'desc'
+} = options;
+
+// Build query parameters
+const params = new URLSearchParams();
+params.append('page', page.toString());
+params.append('limit', limit.toString());
+if (schoolId) params.append('school_id', schoolId);
+if (classId) params.append('class_id', classId);
+if (section) params.append('section', section);
+if (status) params.append('status', status);
+if (search) params.append('search', search);
+params.append('sortBy', sortBy);
+params.append('sortOrder', sortOrder);
+
+const response = await authClient.get(`/students?${params.toString()}`);
+
+// Map MongoDB response to match Supabase format
+const students = response.data.data.map((student: any) => ({
+id: student._id,
+first_name: student.first_name,
+middle_name: student.middle_name,
+last_name: student.last_name,
+full_name: `${student.first_name} ${student.last_name}`,
+email: student.email,
+gender: student.gender,
+roll_number: student.roll_number,
+admission_number: student.admission_number,
+class_id: student.class_id,
+school_id: student.school_id,
+section: student.section,
+status: student.status,
+created_at: student.created_at,
+// Include other fields as needed
+}));
+
+return {
+data: students,
+pagination: response.data.pagination
+};
+} catch (error) {
+console.error('Error fetching students:', error);
+throw error;
+}
+};
+
+export const getStudentById = async (id: string) => {
+try {
+const response = await authClient.get(`/students/${id}`);
+const student = response.data.data;
+
+// Map MongoDB response to match Supabase format
+return {
+id: student._id,
+first_name: student.first_name,
+middle_name: student.middle_name,
+last_name: student.last_name,
+full_name: `${student.first_name} ${student.last_name}`,
+email: student.email,
+gender: student.gender,
+date_of_birth: student.date_of_birth,
+roll_number: student.roll_number,
+admission_number: student.admission_number,
+admission_date: student.admission_date,
+class_id: student.class_id,
+school_id: student.school_id,
+section: student.section,
+address: student.address.street,
+city: student.address.city,
+state: student.address.state,
+country: student.address.country,
+pincode: student.address.pincode,
+phone: student.phone,
+status: student.status,
+created_at: student.created_at,
+academic_year: student.academic_year,
+// Include other fields as needed
+};
+} catch (error) {
+console.error('Error fetching student:', error);
+throw error;
+}
+};
+
+// Get current tenant ID from local storage
+const getCurrentTenantId = () => {
+const user = JSON.parse(localStorage.getItem('auth_user') || '{}');
+return user.tenant_id || 'default';
+};
+
+// School related functions
+export const getSchools = async () => {
+try {
+const response = await authClient.get('/schools');
+return response.data.data;
+} catch (error) {
+console.error('Error fetching schools:', error);
+throw error;
+}
+};
+
+export const getSchoolById = async (id: string) => {
+try {
+const response = await authClient.get(`/schools/${id}`);
+return response.data.data;
+} catch (error) {
+console.error('Error fetching school:', error);
+throw error;
+}
+};
+
+// Class related functions
+export const getClasses = async (schoolId?: string) => {
+try {
+const params = new URLSearchParams();
+if (schoolId) params.append('school_id', schoolId);
+
+const response = await authClient.get(`/classes?${params.toString()}`);
+return response.data.data;
+} catch (error) {
+console.error('Error fetching classes:', error);
+throw error;
+}
+};
+
+export const getClassById = async (id: string) => {
+try {
+const response = await authClient.get(`/classes/${id}`);
+return response.data.data;
+} catch (error) {
+console.error('Error fetching class:', error);
+throw error;
+}
+};
+
+// Export MongoDB service
+export const mongodbService = {
+login,
+register,
+logout,
+getUserProfile,
+createTestUsers,
+isMongoDBConfigured,
+createStudent,
+updateStudent,
+deleteStudent,
+getStudents,
+getStudentById,
+getSchools,
+getSchoolById,
+getClasses,
+getClassById,
+// Add additional service methods as needed
+};
+
 export default mongodbService;

@@ -1,4 +1,5 @@
 
+import { useEffect } from 'react';
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
 import { Users, GraduationCap, BookOpen, ClipboardCheck } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -6,6 +7,8 @@ import { RecentActivity } from '@/components/dashboard/RecentActivity';
 import { UpcomingEvents } from '@/components/dashboard/UpcomingEvents';
 import { TestUserCreator } from '@/components/dashboard/TestUserCreator';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useTenant } from '@/contexts/TenantContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Sample data
 const attendanceData = [
@@ -17,11 +20,47 @@ const attendanceData = [
 ];
 
 const Dashboard = () => {
+  const { tenantSlug, tenantData, isLoading: isTenantLoading } = useTenant();
+  const { user } = useAuth();
+  
+  // Determine if this is a super_admin on the global dashboard
+  const isSuperAdmin = user?.role === 'super_admin';
+  const isGlobalDashboard = window.location.pathname === '/dashboard';
+  
+  // For debugging
+  useEffect(() => {
+    console.log('Dashboard mounted with:', { 
+      tenantSlug, 
+      tenantData, 
+      user,
+      isSuperAdmin, 
+      isGlobalDashboard
+    });
+  }, [tenantSlug, tenantData, user, isSuperAdmin, isGlobalDashboard]);
+  
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Overview of your campus management system.</p>
+        {isSuperAdmin && isGlobalDashboard ? (
+          <p className="text-muted-foreground">
+            <span className="font-semibold text-primary">Super Admin Dashboard</span> - Manage all schools and tenants
+          </p>
+        ) : tenantData ? (
+          <p className="text-muted-foreground">
+            {tenantData.name} School Management Dashboard
+          </p>
+        ) : (
+          <p className="text-muted-foreground">Overview of your campus management system.</p>
+        )}
+        {tenantSlug && (
+          <p className="text-sm text-primary">Tenant: {tenantSlug}</p>
+        )}
+        {isSuperAdmin && isGlobalDashboard && (
+          <p className="text-sm text-green-500 font-medium mt-2">
+            Super Admin Mode - You have access to all system features
+          </p>
+        )}
       </div>
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

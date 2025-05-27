@@ -1,5 +1,6 @@
 const authService = require('../services/authService');
 const { USER_ROLES } = require('../models/users/User');
+const Tenant = require('../models/organization/Tenant');
 
 /**
  * Authentication Middleware
@@ -140,6 +141,84 @@ const authMiddleware = {
     }
 
     next();
+  },
+  
+  /**
+   * Verify that the user belongs to the specified tenant
+   * Used for tenant-specific routes
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @param {Function} next - Express next function
+   */
+  verifyTenant: async (req, res, next) => {
+    try {
+      // Check if user exists
+      if (!req.user) {
+        return res.status(401).json({
+          success: false,
+          message: 'Unauthorized - Authentication required'
+        });
+      }
+      
+      // Get tenant slug from URL params
+      const tenantSlug = req.params.tenantSlug;
+      
+      if (!tenantSlug) {
+        return next(); // No tenant slug in URL, skip verification
+      }
+      
+      // If user has tenant_slug in token and it matches the URL param, allow access
+      if (req.user.tenant_slug && req.user.tenant_slug === tenantSlug) {
+        return next();
+      }
+      
+      // If user has tenant_id, verify it matches the tenant slug from params
+      if (req.user.tenant_id) {
+        // Find tenant by slug
+        const tenant = await Tenant.findOne({ slug: tenantSlug });
+        
+        if (!tenant) {
+          return res.status(404).json({
+            success: false,
+            message: `Tenant '${tenantSlug}' not found`
+          });
+        }
+        
+        // Check if tenant ID matches user's tenant ID
+        if (tenant._id.toString() !== req.user.tenant_id.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: `Access denied - You are not authorized for tenant '${tenantSlug}'`
+          });
+        }
+        
+        // Add tenant info to request for later use
+        req.tenant = tenant;
+        return next();
+      }
+      
+      // If super admin, allow access to any tenant
+      if (req.user.role === USER_ROLES.SUPER_ADMIN) {
+        // Find tenant by slug for future use
+        const tenant = await Tenant.findOne({ slug: tenantSlug });
+        if (tenant) {
+          req.tenant = tenant;
+        }
+        return next();
+      }
+      
+      // Default: deny access if tenant verification failed
+      return res.status(403).json({
+        success: false,
+        message: `Access denied - Not authorized for tenant '${tenantSlug}'`
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: 'Server error during tenant verification',
+        error: error.message
+      });
+    }
   }
 };
 

@@ -38,9 +38,10 @@ const authService = {
    * Authenticate user and generate JWT token
    * @param {string} email - User email
    * @param {string} password - User password
+   * @param {string} tenantSlug - Optional tenant slug for tenant-specific authentication
    * @returns {Object} User data and JWT token
    */
-  async loginUser(email, password) {
+  async loginUser(email, password, tenantSlug) {
     try {
       // Find user by email
       const user = await User.findOne({ email });
@@ -58,16 +59,100 @@ const authService = {
       if (!isMatch) {
         throw new Error('Invalid email or password');
       }
+      console.log("User found and password verified",user);
+      
+      // Get tenant info based on the provided slug or user's assigned tenant
+      const Tenant = require('../models/organization/Tenant');
+      let tenant = null;
+
+      // Check if user is super_admin for special handling
+      const isSuperAdmin = user.role === 'super_admin';
+      const isGeneralLoginRoute = !tenantSlug; // If no tenantSlug, assume general login route
+
+      console.log(`Login attempt - User: ${user.email}, Role: ${user.role}, TenantSlug: ${tenantSlug || 'none'}`);
+
+      // CASE 1: Super admin using general login route - don't enforce tenant
+      if (isSuperAdmin && isGeneralLoginRoute) {
+        console.log('Super admin login via general route - no tenant validation needed');
+        // Super admin can still have a default tenant if one is assigned
+        if (user.tenant_id) {
+          tenant = await Tenant.findOne({ _id: user.tenant_id });
+          if (tenant) {
+            console.log(`Super admin has default tenant: ${tenant.slug}`);
+          }
+        }
+      }
+      // CASE 2: Specific tenant slug provided in the request
+      else if (tenantSlug) {
+        console.log(`Tenant-specific login attempt for: ${tenantSlug}`);
+        tenant = await Tenant.findOne({ slug: tenantSlug });
+        
+        if (!tenant) {
+          throw new Error(`Tenant with slug '${tenantSlug}' not found`);
+        }
+
+        // For non-super_admin users, verify they belong to this tenant
+        if (!isSuperAdmin && user.tenant_id && user.tenant_id.toString() !== tenant._id.toString()) {
+          throw new Error(`User is not authorized for tenant '${tenantSlug}'`);
+        }
+      }
+      // CASE 3: No tenant slug provided, but user has an assigned tenant
+      else if (user.tenant_id) {
+        console.log(`User has assigned tenant_id: ${user.tenant_id}`);
+        tenant = await Tenant.findOne({ _id: user.tenant_id });
+        if (tenant) {
+          console.log(`Found user's tenant: ${tenant.slug}`);
+        }
+      }
+
+      // Set tenant info on user if a tenant was found
+      if (tenant) {
+        user.tenant_id = tenant._id;
+        user.tenant_slug = tenant.slug;
+        console.log(`Setting user tenant to: ${tenant.slug}`);
+      } else {
+        console.log('No tenant found or assigned for this user');
+      }
+
+      // If super_admin without a tenant, we still keep them authenticated
+      if (isSuperAdmin && !tenant) {
+        console.log('Super admin authenticated without specific tenant');
+      }
+      
 
       // Update last login timestamp
       user.last_login = new Date();
       await user.save();
 
-      // Generate JWT token
+      // Generate JWT token with tenant info
       const token = this.generateToken(user);
 
+      // Prepare user response
+      const userJSON = user.toJSON();
+      
+      // Always ensure role is correctly set
+      userJSON.role = user.role;
+      
+      // Add tenant information to response if available
+      if (tenant && tenant.slug) {
+        userJSON.tenant_slug = tenant.slug;
+        userJSON.tenant_id = tenant._id.toString();
+        console.log(`Response includes tenant: ${tenant.slug}`);
+      } else if (tenantSlug) {
+        userJSON.tenant_slug = tenantSlug;
+        console.log(`Response includes requested tenant slug: ${tenantSlug}`);
+      }
+      
+      // Log the final response for debugging
+      console.log('Final user response:', {
+        id: userJSON.id || userJSON._id,
+        email: userJSON.email,
+        role: userJSON.role,
+        tenant_slug: userJSON.tenant_slug || 'none'
+      });
+
       return {
-        user: user.toJSON(),
+        user: userJSON,
         token
       };
     } catch (error) {
@@ -86,7 +171,8 @@ const authService = {
         id: user._id,
         email: user.email,
         role: user.role,
-        tenant_id: user.tenant_id
+        tenant_id: user.tenant_id,
+        tenant_slug: user.tenant_slug // Include tenant slug in token payload
       }
     };
 

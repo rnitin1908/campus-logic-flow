@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTenant } from '@/contexts/TenantContext';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import TestUserCreator from './TestUserCreator';
 import { AlertCircle } from 'lucide-react';
+
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -13,7 +16,14 @@ const LoginForm = () => {
   const [error, setError] = useState<string | null>(null);
   const [showTestUsers, setShowTestUsers] = useState(false);
   
+  
   const { login } = useAuth();
+  const { tenantSlug,setIsValidTenant } = useTenant();
+  const { tenantSlug: paramSlug } = useParams<{ tenantSlug: string }>();
+  const navigate = useNavigate();
+  
+  // Use param slug if tenant context is not yet initialized
+  const currentTenantSlug = tenantSlug || paramSlug;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -21,9 +31,39 @@ const LoginForm = () => {
     setError(null);
     
     try {
-      console.log('Attempting login with:', email);
-      await login(email, password);
-      // Login success is handled by auth context redirecting to dashboard
+      // Clear any stored tenant data before login when using general login path
+      const isGeneralLoginPath = window.location.pathname === '/auth/login';
+      if (isGeneralLoginPath) {
+        // Only clear tenant data if we're on the general login path
+        // This prevents issues when switching between tenants
+        localStorage.removeItem('tenantSlug');
+        localStorage.removeItem('tenantId');
+      }
+      
+      console.log('Attempting login with:', email, 'for tenant path:', window.location.pathname);
+      
+      // Only pass tenant slug if we're on a tenant-specific login page
+      // For general /auth/login, don't pass any tenant slug to allow proper user detection
+      const loginTenantSlug = isGeneralLoginPath ? undefined : currentTenantSlug;
+      const response: any = await login(email, password, loginTenantSlug);
+      
+      console.log('Login response:', response);
+      
+      // Determine where to redirect based on user role and tenant info
+      if (response?.role === 'super_admin' && isGeneralLoginPath) {
+        // Super admin on general login path goes to main dashboard
+        console.log('Super admin login via general path, navigating to main dashboard');
+        navigate('/dashboard');
+      } else if (response?.tenantSlug) {
+        // Regular users with tenant slug go to their tenant dashboard
+        console.log('User has tenant slug, navigating to:', response.tenantSlug);
+        setIsValidTenant(true);
+        navigate(`/${response.tenantSlug}/dashboard`);
+      } else {
+        // Fallback - go to main dashboard if no tenant info available
+        console.log('No tenant info available, using main dashboard');
+        navigate('/dashboard');
+      }
     } catch (error: any) {
       console.error('Login error:', error);
       setError(error.message || 'Login failed. Please check your credentials.');

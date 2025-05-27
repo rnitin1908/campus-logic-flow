@@ -11,6 +11,7 @@ if (!MONGODB_URI) {
 // Connect to MongoDB
 async function connectToDatabase() {
   try {
+    // mongoose.set('debug', true);
     if (mongoose.connection.readyState >= 1) {
       return;
     }

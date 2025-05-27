@@ -65,12 +65,28 @@ export default function Sidebar() {
   
   // Function to get the correct href based on module path and tenant routing
   const getModuleHref = (path: string) => {
-    // If we're in a school-specific route, prefix with /schools/{schoolCode}
-    if (isSchoolSpecificRoute && schoolCode) {
-      // Convert root path to just the module name
-      const modulePath = path.startsWith('/') ? path.substring(1) : path;
-      return `/schools/${schoolCode}/${modulePath}`;
+    // Extract base path without leading slash
+    const basePath = path.startsWith('/') ? path.substring(1) : path;
+    
+    // Special case: Super admin can use global routes directly
+    if (user?.role === USER_ROLES.SUPER_ADMIN) {
+      // Super admin always gets non-tenant routes
+      return path;
     }
+
+    // For school-specific routes in the /schools/{code} format
+    if (isSchoolSpecificRoute && schoolCode) {
+      return `/schools/${schoolCode}/${basePath}`;
+    }
+    
+    // For tenant-based routing, check for tenant slug in user data or localStorage
+    const tenantSlug = user?.tenantSlug || localStorage.getItem('tenantSlug');
+    if (tenantSlug) {
+      // If we have tenant context, redirect to tenant-specific route
+      return `/${tenantSlug}/${basePath}`;
+    }
+    
+    // Fallback to regular route if no tenant context
     return path;
   };
   
@@ -264,7 +280,7 @@ export default function Sidebar() {
   }, [] as typeof links);
 
   return (
-    <div className="flex h-full w-full flex-col border-r bg-card">
+    <div className="flex h-full flex-col border-r bg-card">
       <div className="flex h-14 items-center border-b px-4">
         <NavLink to="/" className="flex items-center gap-2 font-semibold">
           <GraduationCap className="h-6 w-6" />
