@@ -264,8 +264,14 @@ export default function Sidebar() {
     roles: module.roles,
   }));
   
+  const dynamicLinksForTenant = links.map(module => ({
+    title: module.title,
+    href: getModuleHref(module.href),
+    icon: module.icon,
+    roles: module.roles,
+  }));
   // Filter links to only show those the user has access to
-  const filteredLinks = [...links, ...dynamicLinks].filter(
+  const filteredLinks = [...dynamicLinksForTenant, ...dynamicLinks].filter(
     link => !link.roles || (user?.role && link.roles.includes(user.role as UserRole))
   );
   
