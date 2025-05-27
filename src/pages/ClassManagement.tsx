@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Plus, Users, BookOpen, Edit, Trash2, GraduationCap } from 'lucide-react';
 import { ClassData, SectionData, SubjectData } from '@/types';
@@ -38,7 +39,7 @@ const subjectSchema = z.object({
   department: z.string().min(1, 'Department is required'),
   credit_hours: z.number().min(1, 'Credit hours is required'),
   is_elective: z.boolean().default(false),
-  grade_levels: z.number().array().min(1, 'Grade levels are required')
+  grade_levels: z.string().min(1, 'Grade levels are required')
 });
 
 type ClassFormData = z.infer<typeof classSchema>;
@@ -143,7 +144,7 @@ export default function ClassManagement() {
       department: subject.department,
       credit_hours: subject.credit_hours,
       is_elective: subject.is_elective,
-      grade_levels: subject.grade_levels
+      grade_levels: subject.grade_levels?.join(', ') || ''
     });
     setIsSubjectDialogOpen(true);
   };
@@ -276,11 +277,17 @@ export default function ClassManagement() {
     try {
       console.log('Subject data:', data);
       
+      // Parse grade levels from string to number array
+      const gradeLevelsArray = data.grade_levels
+        .split(',')
+        .map(level => parseInt(level.trim()))
+        .filter(level => !isNaN(level));
+      
       if (editingSubject) {
         // Update existing subject
         setSubjects(prev => prev.map(subject =>
           subject.id === editingSubject.id
-            ? { ...subject, ...data }
+            ? { ...subject, ...data, grade_levels: gradeLevelsArray }
             : subject
         ));
         setEditingSubject(null);
@@ -298,7 +305,7 @@ export default function ClassManagement() {
           department: data.department,
           credit_hours: data.credit_hours,
           is_elective: data.is_elective,
-          grade_levels: data.grade_levels
+          grade_levels: gradeLevelsArray
         };
         setSubjects(prev => [...prev, newSubject]);
         toast({
@@ -347,7 +354,6 @@ export default function ClassManagement() {
               <TabsTrigger value="subjects" className="flex items-center gap-2"><GraduationCap className="h-4 w-4" /> Subjects</TabsTrigger>
             </TabsList>
             
-            {/* Classes Tab */}
             <TabsContent value="classes" className="space-y-4">
               <div className="flex justify-between items-center">
                 <CardTitle>Classes</CardTitle>
@@ -563,7 +569,6 @@ export default function ClassManagement() {
               )}
             </TabsContent>
 
-            {/* Sections Tab */}
             <TabsContent value="sections" className="space-y-4">
               <div className="flex justify-between items-center">
                 <CardTitle>Sections</CardTitle>
@@ -857,7 +862,10 @@ export default function ClassManagement() {
                             <FormItem>
                               <FormLabel>Grade Levels</FormLabel>
                               <FormControl>
-                                <Input placeholder="e.g., 9, 10, 11, 12" {...field} />
+                                <Input 
+                                  placeholder="e.g., 9, 10, 11, 12" 
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -899,6 +907,7 @@ export default function ClassManagement() {
                       <TableHead>Subject Code</TableHead>
                       <TableHead>Department</TableHead>
                       <TableHead>Credit Hours</TableHead>
+                      <TableHead>Grade Levels</TableHead>
                       <TableHead>Is Elective</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -917,6 +926,7 @@ export default function ClassManagement() {
                         <TableCell>{subject.code}</TableCell>
                         <TableCell>{subject.department}</TableCell>
                         <TableCell>{subject.credit_hours}</TableCell>
+                        <TableCell>{subject.grade_levels?.join(', ')}</TableCell>
                         <TableCell>
                           <Badge variant={subject.is_elective ? 'default' : 'outline'}>
                             {subject.is_elective ? 'Elective' : 'Required'}
