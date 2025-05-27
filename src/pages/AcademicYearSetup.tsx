@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Plus, Calendar, CheckCircle, Clock, Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { AcademicYearData } from '@/types';
 
 const academicYearSchema = z.object({
   name: z.string().min(1, 'Academic year name is required'),
@@ -31,17 +31,6 @@ const academicYearSchema = z.object({
 });
 
 type AcademicYearFormData = z.infer<typeof academicYearSchema>;
-
-interface AcademicYearData {
-  id: string;
-  name: string;
-  start_date: string;
-  end_date: string;
-  is_current: boolean;
-  description?: string;
-  status: 'active' | 'upcoming' | 'completed';
-  created_at: string;
-}
 
 export default function AcademicYearSetup() {
   const [isLoading, setIsLoading] = useState(false);
@@ -106,10 +95,14 @@ export default function AcademicYearSetup() {
           description: `Academic year ${data.name} has been updated successfully.`,
         });
       } else {
-        // Create new academic year
+        // Create new academic year - ensure all required properties are set
         const newAcademicYear: AcademicYearData = {
           id: `year_${Date.now()}`,
-          ...data,
+          name: data.name,
+          start_date: data.start_date,
+          end_date: data.end_date,
+          is_current: data.is_current,
+          description: data.description,
           status,
           created_at: new Date().toISOString()
         };

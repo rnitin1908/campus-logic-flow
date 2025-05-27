@@ -1,26 +1,15 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabaseService, USER_ROLES, mongodbService } from '@/lib/services';
 import { useToast } from '@/components/ui/use-toast';
+import { User } from '@/types';
 // Import supabase client for backward compatibility during migration
 import { supabase } from '@/integrations/supabase/client';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  schoolId: string | null;
-  schoolName: string | null;
-  token: string;
-  tenantSlug?: string; // Track which tenant this user belongs to
-}
 
 interface AuthContextProps {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string, tenantSlug?: string) => Promise<void>;
+  login: (email: string, password: string, tenantSlug?: string) => Promise<User>;
   register: (name: string, email: string, password: string, role?: string, schoolId?: string | null) => Promise<void>;
   logout: () => void;
   hasRole: (roles: string[]) => boolean;
@@ -31,7 +20,7 @@ const AuthContext = createContext<AuthContextProps>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
-  login: async () => { },
+  login: async () => ({} as User),
   register: async () => { },
   logout: () => { },
   hasRole: () => false,
@@ -47,107 +36,106 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Check if authentication services are configured
-    // const isSupabaseReady = supabaseService.isSupabaseConfigured();
-    const isMongoDBReady = mongodbService.isMongoDBConfigured();
+  // Check if authentication services are configured
+  // const isSupabaseReady = supabaseService.isSupabaseConfigured();
+  const isMongoDBReady = mongodbService.isMongoDBConfigured();
 
-    if (!isMongoDBReady) {
-      toast({
-        title: "Configuration Error",
-        description: "MongoDB API is not configured. Authentication will not work.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
+  if (!isMongoDBReady) {
+    toast({
+      title: "Configuration Error",
+      description: "MongoDB API is not configured. Authentication will not work.",
+      variant: "destructive",
+    });
+    setIsLoading(false);
+    return;
+  }
 
-    // Prioritize MongoDB during migration
-    if (isMongoDBReady) {
-      console.log("Using MongoDB for authentication");
-      // Check for stored user data
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const userData = JSON.parse(storedUser);
-          console.log("Using stored user data with MongoDB:", userData);
-          setUser(userData);
-          setIsAuthenticated(true);
-        } catch (error) {
-          console.error("Error parsing stored user data:", error);
-        }
+  // Prioritize MongoDB during migration
+  if (isMongoDBReady) {
+    console.log("Using MongoDB for authentication");
+    // Check for stored user data
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        console.log("Using stored user data with MongoDB:", userData);
+        setUser(userData);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error("Error parsing stored user data:", error);
       }
-      setIsLoading(false);
-      return;
     }
+    setIsLoading(false);
+    return;
+  }
 
-    // Fall back to Supabase if MongoDB is not configured
-    // if (isSupabaseReady) {
-    //   console.log("Falling back to Supabase auth state listener");
+  // Fall back to Supabase if MongoDB is not configured
+  // if (isSupabaseReady) {
+  //   console.log("Falling back to Supabase auth state listener");
 
-    //   // Set up auth state listener
-    //   const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    //     (event, session) => {
-    //       console.log("Auth state changed:", event, !!session);
+  //   // Set up auth state listener
+  //   const { data: { subscription } } = supabase.auth.onAuthStateChange(
+  //     (event, session) => {
+  //       console.log("Auth state changed:", event, !!session);
 
-    //       if (event === 'SIGNED_IN' && session) {
-    //         console.log("User signed in, session established");
-    //         // We'll use the stored user data if available
-    //         const storedUser = localStorage.getItem('user');
-    //         if (storedUser) {
-    //           const userData = JSON.parse(storedUser);
-    //           console.log("Using stored user data:", userData);
-    //           setUser(userData);
-    //           setIsAuthenticated(true);
-    //         } else if (session.user?.email) {
-    //           // If no stored data, defer fetching profile
-    //           console.log("No stored user data, will fetch profile later");
-    //           setTimeout(() => {
-    //             supabaseService.login(session.user!.email!, '')
-    //               .catch(err => console.error("Error refreshing user data:", err));
-    //           }, 0);
-    //         }
-    //       } else if (event === 'SIGNED_OUT') {
-    //         console.log("User signed out, clearing session");
-    //         setUser(null);
-    //         setIsAuthenticated(false);
-    //         localStorage.removeItem('user');
-    //       }
-    //     }
-    //   );
+  //       if (event === 'SIGNED_IN' && session) {
+  //         console.log("User signed in, session established");
+  //         // We'll use the stored user data if available
+  //         const storedUser = localStorage.getItem('user');
+  //         if (storedUser) {
+  //           const userData = JSON.parse(storedUser);
+  //           console.log("Using stored user data:", userData);
+  //           setUser(userData);
+  //           setIsAuthenticated(true);
+  //         } else if (session.user?.email) {
+  //           // If no stored data, defer fetching profile
+  //           console.log("No stored user data, will fetch profile later");
+  //           setTimeout(() => {
+  //             supabaseService.login(session.user!.email!, '')
+  //               .catch(err => console.error("Error refreshing user data:", err));
+  //           }, 0);
+  //         }
+  //       } else if (event === 'SIGNED_OUT') {
+  //         console.log("User signed out, clearing session");
+  //         setUser(null);
+  //         setIsAuthenticated(false);
+  //         localStorage.removeItem('user');
+  //       }
+  //     }
+  //   );
 
-    //   // Check for existing session
-    //   console.log("Checking for existing session");
-    //   supabase.auth.getSession().then(({ data: { session } }) => {
-    //     console.log("Session check result:", !!session);
+  //   // Check for existing session
+  //   console.log("Checking for existing session");
+  //   supabase.auth.getSession().then(({ data: { session } }) => {
+  //     console.log("Session check result:", !!session);
 
-    //     if (session) {
-    //       // If we have a valid session but no user data, try to fetch profile
-    //       const storedUser = localStorage.getItem('user');
-    //       if (!storedUser && session.user?.email) {
-    //         console.log("Valid session without stored user data, will fetch profile");
-    //         // We need to fetch and set up user data asynchronously
-    //         setTimeout(() => {
-    //           // We use this trick to avoid blocking the UI with synchronous calls
-    //           supabaseService.login(session.user!.email!, '').catch((err) => {
-    //             console.error("Error refreshing user data:", err);
-    //             // We ignore errors here as this is just an attempt to refresh local data
-    //           });
-    //         }, 0);
-    //       } else if (storedUser) {
-    //         console.log("Using stored user data with valid session");
-    //         setUser(JSON.parse(storedUser));
-    //         setIsAuthenticated(true);
-    //       }
-    //     }
-    //     setIsLoading(false);
-    //   });
+  //     if (session) {
+  //       // If we have a valid session but no user data, try to fetch profile
+  //       const storedUser = localStorage.getItem('user');
+  //       if (!storedUser && session.user?.email) {
+  //         console.log("Valid session without stored user data, will fetch profile");
+  //         // We need to fetch and set up user data asynchronously
+  //         setTimeout(() => {
+  //           // We use this trick to avoid blocking the UI with synchronous calls
+  //           supabaseService.login(session.user!.email!, '').catch((err) => {
+  //             console.error("Error refreshing user data:", err);
+  //             // We ignore errors here as this is just an attempt to refresh local data
+  //           });
+  //         }, 0);
+  //       } else if (storedUser) {
+  //         console.log("Using stored user data with valid session");
+  //         setUser(JSON.parse(storedUser));
+  //         setIsAuthenticated(true);
+  //       }
+  //     }
+  //     setIsLoading(false);
+  //   });
 
-    //   return () => {
-    //     console.log("Cleaning up auth state subscription");
-    //     subscription.unsubscribe();
-    //   };
-    // }
+  //   return () => {
+  //     console.log("Cleaning up auth state subscription");
+  //     subscription.unsubscribe();
+  //   };
+  // }
 
     setIsLoading(false);
   }, [toast]);
@@ -156,7 +144,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(!!user);
   }, [user]);
 
-  const login = async (email: string, password: string, tenantSlug?: string) => {
+  const login = async (email: string, password: string, tenantSlug?: string): Promise<User> => {
     setIsLoading(true);
     try {
       // First try Supabase if configured
@@ -181,15 +169,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log("MongoDB login successful, response:", response);
 
       // Extract user data from MongoDB response and format it to match User type
-      const userData = {
+      const userData: User = {
         id: response.user?.id || (response.user as any)?._id || '',
         name: response.user?.name || email.split('@')[0],
         email: response.user?.email || email,
         role: response.user?.role || USER_ROLES.STUDENT,
         schoolId: response.user?.school_id || null,
-        schoolName: response.user?.school_name || (response.user as any)?.school_name || null,
+        schoolName: (response.user as any)?.school_name || null,
         token: response.token || '',
-        tenantSlug: response.user?.tenant_slug || tenantSlug // Use the provided tenant slug or the one from response
+        tenantSlug: response.user?.tenant_slug || tenantSlug
       };
 
       console.log("Formatted user data for state with tenant:", userData);
