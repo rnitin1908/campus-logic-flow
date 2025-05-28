@@ -1,4 +1,3 @@
-
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -30,6 +29,7 @@ import CreateUsers from '@/pages/Admin/CreateUsers';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTenant } from '@/contexts/TenantContext';
 import RoleBasedRoute from '@/components/auth/RoleBasedRoute';
+import UserManagement from '@/pages/UserManagement';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +62,16 @@ function AppContent() {
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                
+                {/* User Management Routes */}
+                <Route 
+                  path="/users" 
+                  element={
+                    <RoleBasedRoute allowedRoles={['super_admin', 'school_admin']}>
+                      <UserManagement />
+                    </RoleBasedRoute>
+                  } 
+                />
                 
                 {/* School Configuration Routes */}
                 <Route 
