@@ -1,92 +1,92 @@
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 
 interface TenantData {
   id: string;
   name: string;
   slug: string;
-  // Add other tenant properties as needed
+  settings?: any;
 }
 
 interface TenantContextType {
   tenantSlug: string | null;
-  isValidTenant: boolean;
   tenantData: TenantData | null;
-  isLoading: boolean;
-  setIsValidTenant: (valid: boolean) => void;
-  setTenantSlug: (slug: string | null) => void;
+  setTenantData: (data: TenantData | null) => void;
   clearTenant: () => void;
+  isLoading: boolean;
 }
 
 const TenantContext = createContext<TenantContextType>({
   tenantSlug: null,
-  isValidTenant: false,
   tenantData: null,
-  isLoading: false,
-  setIsValidTenant: () => {},
-  setTenantSlug: () => {},
+  setTenantData: () => {},
   clearTenant: () => {},
+  isLoading: false,
 });
 
-export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const TenantProvider = ({ children }: { children: ReactNode }) => {
+  const location = useLocation();
   const [tenantSlug, setTenantSlug] = useState<string | null>(null);
-  const [isValidTenant, setIsValidTenant] = useState(false);
   const [tenantData, setTenantData] = useState<TenantData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const location = useLocation();
 
   useEffect(() => {
     // Extract tenant slug from URL path
-    const pathParts = location.pathname.split('/');
-    if (pathParts.length > 1 && pathParts[1] && pathParts[1] !== 'auth') {
-      const slug = pathParts[1];
-      setTenantSlug(slug);
-      setIsValidTenant(true);
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    
+    // Check if first segment is a tenant slug (not a known global route)
+    const globalRoutes = ['auth', 'register-tenant', 'setup', 'unauthorized'];
+    
+    if (pathSegments.length > 0 && !globalRoutes.includes(pathSegments[0])) {
+      const possibleTenantSlug = pathSegments[0];
       
-      // Mock tenant data - in real app, this would fetch from API
-      setTenantData({
-        id: '1',
-        name: `${slug.charAt(0).toUpperCase() + slug.slice(1)} School`,
-        slug: slug
-      });
-    } else {
-      // Check if we have a stored tenant slug
-      const storedSlug = localStorage.getItem('tenantSlug');
-      if (storedSlug) {
-        setTenantSlug(storedSlug);
-        setIsValidTenant(true);
+      // Update tenant slug if it's different
+      if (possibleTenantSlug !== tenantSlug) {
+        console.log('Setting tenant slug from URL:', possibleTenantSlug);
+        setTenantSlug(possibleTenantSlug);
+        
+        // Set mock tenant data for now
         setTenantData({
-          id: '1',
-          name: `${storedSlug.charAt(0).toUpperCase() + storedSlug.slice(1)} School`,
-          slug: storedSlug
+          id: possibleTenantSlug,
+          name: possibleTenantSlug.toUpperCase() + ' School',
+          slug: possibleTenantSlug,
         });
       }
+    } else {
+      // Clear tenant if on global route
+      if (tenantSlug !== null) {
+        console.log('Clearing tenant slug - on global route');
+        setTenantSlug(null);
+        setTenantData(null);
+      }
     }
-  }, [location.pathname]);
+  }, [location.pathname, tenantSlug]);
 
   const clearTenant = () => {
     setTenantSlug(null);
-    setIsValidTenant(false);
     setTenantData(null);
-    localStorage.removeItem('tenantSlug');
-  };
-
-  const value: TenantContextType = {
-    tenantSlug,
-    isValidTenant,
-    tenantData,
-    isLoading,
-    setIsValidTenant,
-    setTenantSlug,
-    clearTenant,
   };
 
   return (
-    <TenantContext.Provider value={value}>
+    <TenantContext.Provider
+      value={{
+        tenantSlug,
+        tenantData,
+        setTenantData,
+        clearTenant,
+        isLoading,
+      }}
+    >
       {children}
     </TenantContext.Provider>
   );
 };
 
-export const useTenant = () => useContext(TenantContext);
+export const useTenant = () => {
+  const context = useContext(TenantContext);
+  if (context === undefined) {
+    throw new Error('useTenant must be used within a TenantProvider');
+  }
+  return context;
+};
