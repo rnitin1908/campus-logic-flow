@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { apiClient } from './api';
 import { Student, StudentFormData, GenderType, StatusType } from '@/types/student';
@@ -442,7 +441,146 @@ throw error;
 }
 };
 
-// Export MongoDB service
+// User management functions
+export const createUser = async (userData: any) => {
+  try {
+    const response = await authClient.post('/users', userData);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error creating user:', error);
+    throw error;
+  }
+};
+
+export const updateUser = async (id: string, userData: any) => {
+  try {
+    const response = await authClient.put(`/users/${id}`, userData);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw error;
+  }
+};
+
+export const deleteUser = async (id: string) => {
+  try {
+    const response = await authClient.delete(`/users/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
+};
+
+export const getUsers = async (options: {
+  page?: number;
+  limit?: number;
+  role?: string;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      role,
+      search,
+      sortBy = 'created_at',
+      sortOrder = 'desc'
+    } = options;
+
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    if (role) params.append('role', role);
+    if (search) params.append('search', search);
+    params.append('sortBy', sortBy);
+    params.append('sortOrder', sortOrder);
+
+    const response = await authClient.get(`/users?${params.toString()}`);
+
+    const users = response.data.data.map((user: any) => ({
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      profile_image: user.profile_image,
+      school_id: user.school_id,
+      class_id: user.class_id,
+      section: user.section,
+      parent_links: user.parent_links,
+      student_links: user.student_links,
+      account_status: user.account_status || 'active',
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+    }));
+
+    return {
+      data: users,
+      pagination: response.data.pagination
+    };
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
+export const getUserById = async (id: string) => {
+  try {
+    const response = await authClient.get(`/users/${id}`);
+    const user = response.data.data;
+
+    return {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      phone: user.phone,
+      profile_image: user.profile_image,
+      school_id: user.school_id,
+      class_id: user.class_id,
+      section: user.section,
+      parent_links: user.parent_links,
+      student_links: user.student_links,
+      account_status: user.account_status || 'active',
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+    };
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    throw error;
+  }
+};
+
+// Link students to parents
+export const linkStudentToParent = async (studentId: string, parentId: string, relationship: string) => {
+  try {
+    const response = await authClient.post('/users/link-parent', {
+      student_id: studentId,
+      parent_id: parentId,
+      relationship,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error linking student to parent:', error);
+    throw error;
+  }
+};
+
+// Unlink students from parents
+export const unlinkStudentFromParent = async (studentId: string, parentId: string) => {
+  try {
+    const response = await authClient.delete(`/users/unlink-parent/${studentId}/${parentId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error unlinking student from parent:', error);
+    throw error;
+  }
+};
+
+// Update the mongodbService export to include new functions
 export const mongodbService = {
 login,
 register,
@@ -459,7 +597,13 @@ getSchools,
 getSchoolById,
 getClasses,
 getClassById,
-// Add additional service methods as needed
+  createUser,
+  updateUser,
+  deleteUser,
+  getUsers,
+  getUserById,
+  linkStudentToParent,
+  unlinkStudentFromParent,
 };
 
 export default mongodbService;
