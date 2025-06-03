@@ -111,10 +111,10 @@ export default function Sidebar() {
     },
     // School Management - Super Admin only
     {
-      title: "Schools",
-      href: "/schools",
+      title: "Manage Schools",
+      href: "/manage-schools",
       icon: <School className="h-5 w-5" />,
-      roles: [USER_ROLES.SUPER_ADMIN],
+      roles: [USER_ROLES.SUPER_ADMIN,USER_ROLES.SCHOOL_ADMIN],
     },
     // School Configuration
     {

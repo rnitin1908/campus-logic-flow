@@ -20,6 +20,7 @@ interface AuthContextProps {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  token?: string; // Add token property for API calls
   login: (email: string, password: string, tenantSlug?: string) => Promise<void>;
   register: (name: string, email: string, password: string, role?: string, schoolId?: string | null) => Promise<void>;
   logout: () => void;
@@ -31,6 +32,7 @@ const AuthContext = createContext<AuthContextProps>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
+  token: undefined,
   login: async () => {},
   register: async () => {},
   logout: () => {},
@@ -259,6 +261,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isAuthenticated,
     isLoading,
+    token: user?.token,  // Pass the token from user object
     login,
     register,
     logout,

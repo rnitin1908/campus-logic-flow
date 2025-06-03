@@ -49,7 +49,7 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
     'dashboard', 'students', 'staff', 'academics', 'attendance', 'auth',
     'unauthorized', 'admin', 'admissions', 'library', 'finance', 'transport',
     'analytics', 'register-school', 'login', 'register', 'reset-password',
-    'not-found', 'api', 'setup-admin' // Added more routes that shouldn't be treated as tenant slugs
+    'not-found', 'api', 'setup-admin', 'manage-schools' // Added more routes that shouldn't be treated as tenant slugs
   ];
   
   // DEVELOPMENT ONLY: List of valid tenant slugs
@@ -160,7 +160,7 @@ export const TenantProvider = ({ children }: TenantProviderProps) => {
         // Check if this is a global route that should be allowed despite invalid tenant
         const isGlobalRoute = [
           '/auth/login', '/dashboard', '/not-found', '/unauthorized',
-          '/admin', '/register-school', '/auth/register', '/auth/setup-admin'
+          '/admin', '/register-school', '/auth/register', '/auth/setup-admin', '/manage-schools'
         ].some(route => location.pathname.startsWith(route));
         
         // If it's a standard route like /dashboard, don't show error or redirect

@@ -11,7 +11,10 @@ import Register from '@/pages/Auth/Register';
 import Unauthorized from '@/pages/Unauthorized';
 import NotFound from '@/pages/NotFound';
 import Index from '@/pages/Index';
-import AdminRoutes from '@/pages/admin/AdminRoutes';
+import AdminRoutes from '@/pages/Admin/AdminRoutes';
+import SchoolManagement from '@/pages/Admin/SchoolManagement';
+import CreateSchool from '@/pages/Admin/CreateSchool';
+import SchoolAdmins from '@/pages/Admin/SchoolAdmins';
 import AdminPortal from '@/pages/Admissions/AdminPortal';
 import ParentPortal from '@/pages/Admissions/ParentPortal';
 import SetupAdmin from '@/pages/SetupAdmin';
@@ -123,7 +126,11 @@ const DashboardProtected = () => (
     <Dashboard />
   </RoleBasedRoute>
 );
-
+const ManageSchoolsProtected = () => (
+  <RoleBasedRoute moduleName="MANAGE_SCHOOLS">
+    <SchoolManagement />
+  </RoleBasedRoute>
+);
 const StudentsProtected = () => (
   <RoleBasedRoute moduleName="STUDENT_MANAGEMENT">
     <Students />
@@ -182,6 +189,12 @@ const AnalyticsProtected = () => (
 const DashboardWrapper = () => (
   <Layout>
     <DashboardProtected />
+  </Layout>
+);
+
+const ManageSchoolsWrapper = () => (
+  <Layout>
+    <ManageSchoolsProtected />
   </Layout>
 );
 
@@ -320,7 +333,7 @@ function App() {
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/not-found" element={<NotFound />} />
             <Route path="/register-school" element={<RegisterTenant />} />
-            
+            <Route path="/manage-schools" element={<ManageSchoolsWrapper />} />
             {/* Direct auth routes (no tenant) */}
             <Route path="/auth/login" element={<Login />} />
             <Route path="/auth/register" element={<Register />} />
@@ -333,6 +346,17 @@ function App() {
               </RoleBasedRoute>
             } />
 
+            {/* <Route path="/super-admin/*" element={
+              <RoleBasedRoute allowedRoles={[USER_ROLES.SUPER_ADMIN]}>
+                <Layout>
+                  <Routes>
+                    <Route path="/schools" element={<SchoolManagement />} />
+                    <Route path="/schools/:schoolCode" element={<SchoolManagement />} />
+                  </Routes>
+                </Layout>
+              </RoleBasedRoute>
+            } /> */}
+  
             {/* Global Module Routes - if tenant is stored, these will eventually redirect */}
             <Route path="/dashboard" element={<DashboardWrapper />} />
             <Route path="/students" element={<StudentsWrapper />} />

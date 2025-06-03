@@ -80,12 +80,16 @@ const schoolController = {
 
       // Get tenant_id from authenticated user
       const tenant_id = req.user.tenant_id;
+      console.log("tenant_id",req.user);
 
       // Build query
       const query = {
-        tenant_id,
+        // tenant_id,
         is_deleted: false
       };
+      if(req.user.role !== 'super_admin'){
+        query.tenant_id = tenant_id;
+      }
 
       // Apply status filter if provided
       if (status) {

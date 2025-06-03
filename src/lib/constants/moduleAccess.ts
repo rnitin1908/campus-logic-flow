@@ -249,6 +249,14 @@ export const MODULE_ACCESS: Record<string, ModuleAccess> = {
       USER_ROLES.PARENT,
       USER_ROLES.ACCOUNTANT
     ]
+  },
+  MANAGE_SCHOOLS: {
+    name: 'Manage Schools',
+    path: '/manage-schools',
+    roles: [
+      USER_ROLES.SUPER_ADMIN,
+      // USER_ROLES.SCHOOL_ADMIN
+    ]
   }
 };
 
